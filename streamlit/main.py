@@ -24,8 +24,8 @@ st.markdown("""
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 1rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        padding-left: 5rem;
+        padding-right: 5rem;
     }
 
     /* --- MENU LATERAL --- */
