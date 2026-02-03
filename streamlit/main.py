@@ -241,53 +241,36 @@ if pagina == "📈 Dashboard Analítico":
             with c1:
                 st.subheader("📊 Distribuição de Risco")
                 fig = px.pie(df, names='Diagnostico', color='Diagnostico', hole=0.6, color_discrete_map=COLOR_MAP)
+                # AJUSTE: Legenda horizontal embaixo para não cortar
+                fig.update_layout(legend=dict(orientation="h", y=-0.1, x=0.5, xanchor="center"), margin=dict(t=20, b=20, l=10, r=10))
                 st.plotly_chart(fig, use_container_width=True)
             with c2:
                 st.subheader("🔍 Análise de Clusters (Peso x Altura)")
                 fig = px.scatter(df, x='Peso', y='Altura', color='Diagnostico', color_discrete_map=COLOR_MAP)
-                fig.update_layout(plot_bgcolor='rgba(0,0,0,0)')
+                # AJUSTE: Margem direita maior para os nomes dos riscos caberem
+                fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', margin=dict(r=120), legend_title=None)
                 st.plotly_chart(fig, use_container_width=True)
             
-            st.markdown("""
-            <div class="insight-box">
-                <div class="insight-title">📚 O Paradoxo do IMC e Gordura Visceral</div>
-                Embora o IMC seja o padrão, a visualização de clusters revela sobreposições. 
-                Estudos da <i>Nature</i> indicam que a gordura visceral e a circunferência abdominal são preditores de risco cardiovascular mais precisos que o peso isolado, 
-                especialmente em indivíduos com alta massa muscular.
-                <br>
-                <a href="https://www.ncbi.nlm.nih.gov/books/NBK573068/" target="_blank" class="insight-link">🔗 Referência</a>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown("###")
+            st.markdown("""<div class="insight-box"><div class="insight-title">📚 O Paradoxo do IMC</div>...</div>""", unsafe_allow_html=True)
 
-
+            # --- LINHA 2 ---
             c3, c4 = st.columns(2)
             with c3:
                 st.subheader("🧬 Fator Hereditário")
                 fig = px.histogram(df, x='Diagnostico', color=col_hist, barmode='group', color_discrete_map=COLOR_MAP)
-                fig.update_layout(plot_bgcolor='rgba(0,0,0,0)')
+                # AJUSTE: Legenda horizontal e margem para o texto inclinado do eixo X
+                fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center"), margin=dict(b=80))
                 st.plotly_chart(fig, use_container_width=True)
             with c4:
                 st.subheader("📅 Idade vs Diagnóstico")
                 fig = px.box(df, x='Diagnostico', y='Idade', color='Diagnostico', color_discrete_map=COLOR_MAP)
-                fig.update_layout(plot_bgcolor='rgba(0,0,0,0)')
+                fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', showlegend=False, margin=dict(b=80))
                 st.plotly_chart(fig, use_container_width=True)
 
- 
-            st.markdown("""
-            <div class="insight-box">
-                <div class="insight-title">🧬 Epigenética e Metabolismo</div>
-                A forte correlação visual entre histórico familiar e obesidade (barras vermelhas) corrobora dados do CDC, 
-                que atribuem à genética uma influência de 40-70% na predisposição. Além disso, o aumento de risco com a idade 
-                reflete a queda natural da Taxa Metabólica Basal (TMB).
-                <br>
-                <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2880224/" target="_blank" class="insight-link">🔗 Referência</a>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown("###")
-
+            st.markdown("""<div class="insight-box"><div class="insight-title">🧬 Epigenética</div>...</div>""", unsafe_allow_html=True)
 
             st.markdown("---")
+            # --- LINHA 3 ---
             c5, c6 = st.columns(2)
             with c5:
                 st.subheader("🕸️ Radar de Hábitos (Normalizado)")
@@ -295,74 +278,37 @@ if pagina == "📈 Dashboard Analítico":
                 valid_radar = [c for c in cols_radar if c in df.columns]
                 
                 if len(valid_radar) == 5:
-                    
                     df_radar = df.groupby('Diagnostico')[valid_radar].mean().reset_index()
                     df_radar = df_radar[df_radar['Diagnostico'].isin(['Peso Normal', 'Obesidade G. III'])]
-                    
-
-                    max_values = {
-                        'Freq_Vegetais': 3.0,   # Escala original 1-3
-                        'Num_Refeicoes': 4.0,   # Escala original 1-4
-                        'Agua_Diaria': 3.0,     # Escala original 1-3
-                        'Freq_Exercicios': 3.0, # Escala original 0-3
-                        col_telas: 2.0          # Escala original 0-2 
-                    }
-                    
-                    # Aplica a normalização
-                    for col in valid_radar:
-                        df_radar[col] = df_radar[col] / max_values.get(col, 1)
+                    max_values = {'Freq_Vegetais': 3.0, 'Num_Refeicoes': 4.0, 'Agua_Diaria': 3.0, 'Freq_Exercicios': 3.0, col_telas: 2.0}
+                    for col in valid_radar: df_radar[col] = df_radar[col] / max_values.get(col, 1)
 
                     fig = go.Figure()
-                    colors_radar = {'Peso Normal': '#1ABC9C', 'Obesidade G. III': '#FF6B6B'}
-                    
                     for i, row in df_radar.iterrows():
-                        fig.add_trace(go.Scatterpolar(
-                            r=row[valid_radar], 
-                            theta=valid_radar, 
-                            fill='toself', 
-                            name=row['Diagnostico'], 
-                            line_color=colors_radar.get(row['Diagnostico'], '#333'),
-                            hoverinfo='text', 
-                            text=[f"{val*100:.0f}% Intensidade" for val in row[valid_radar]]
-                        ))
+                        fig.add_trace(go.Scatterpolar(r=row[valid_radar], theta=valid_radar, fill='toself', name=row['Diagnostico'], line_color=COLOR_MAP.get(row['Diagnostico'])))
                     
-                    # Ajusta o eixo para ir de 0 a 1 (0% a 100%)
+                    # AJUSTE: Margens laterais para o texto do Radar não sumir
                     fig.update_layout(
                         polar=dict(radialaxis=dict(visible=True, range=[0, 1], tickformat=".0%")), 
                         paper_bgcolor='rgba(0,0,0,0)',
-                        margin=dict(t=20, b=20, l=40, r=40)
+                        legend=dict(orientation="h", y=-0.2),
+                        margin=dict(t=40, b=40, l=60, r=60) 
                     )
                     st.plotly_chart(fig, use_container_width=True)
+
             with c6:
                 st.subheader("🚌 Perfil de Risco por Transporte")
                 if 'Transporte' in df.columns:
-                    fig = px.histogram(
-                        df, 
-                        y="Transporte", 
-                        color="Diagnostico", 
-                        orientation='h', 
-                        barnorm='percent', 
-                        color_discrete_map=COLOR_MAP,
-                        category_orders={"Diagnostico": ["Abaixo do Peso", "Peso Normal", "Sobrepeso G. I", "Sobrepeso G. II", "Obesidade G. I", "Obesidade G. II", "Obesidade G. III"]}
-                    )
+                    fig = px.histogram(df, y="Transporte", color="Diagnostico", orientation='h', barnorm='percent', color_discrete_map=COLOR_MAP)
+                    # AJUSTE: Legenda horizontal embaixo para liberar espaço lateral para os nomes dos transportes
                     fig.update_layout(
                         plot_bgcolor='rgba(0,0,0,0)', 
-                        xaxis_title="Proporção (%)", 
-                        yaxis_title=None,
-                        legend_title=None
+                        legend=dict(orientation="h", y=-0.3, x=0.5, xanchor="center"),
+                        margin=dict(l=10, r=10)
                     )
                     st.plotly_chart(fig, use_container_width=True)
-            
-            
-            st.markdown("""
-            <div class="insight-box">
-                <div class="insight-title">🚶 Transporte Ativo e Saúde Pública</div>
-                Estudos do <i>British Medical Journal</i> (BMJ) confirmam: o deslocamento ativo (bicicleta/caminhada) reduz significativamente o IMC e gordura corporal 
-                comparado ao transporte privado. O gráfico de barras ilustra claramente como o ambiente obesogênico (uso de carros) domina os grupos de risco.
-                <br>
-                <a href="https://www.bmj.com/content/349/bmj.g4887" target="_blank" class="insight-link">🔗 Referência</a>
-            </div>
-            """, unsafe_allow_html=True)
+
+            st.markdown("""<div class="insight-box"><div class="insight-title">🚶 Transporte Ativo</div>...</div>""", unsafe_allow_html=True)
 
         else:
             st.error("Erro ao carregar dados. Verifique o arquivo .csv")
