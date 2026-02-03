@@ -1,0 +1,10 @@
+streamlit
+requests
+flask
+streamlit
+pandas
+scikit-learn
+joblib
+requests
+plotly
+pandas
