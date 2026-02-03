@@ -372,14 +372,9 @@ if pagina == "📈 Dashboard Analítico":
         st.error(f"Erro no Dashboard: {e}")
 
 elif pagina == "🩺 Diagnóstico Individual":
-    
-    c_head1, c_head2 = st.columns([0.8, 8])
-    with c_head1:
-        st.image("https://img.icons8.com/fluency/96/health-book.png", width=85)
-    with c_head2:
-        st.title("Prontuário Digital")
-        st.markdown("**Preencha os dados do paciente para obter a predição de risco via IA.**")
-    
+  
+    st.title("Prontuário Digital")
+    st.markdown("**Preencha os dados do paciente para obter a predição de risco via IA.**")
     st.markdown("---")
     
     with st.form("main_form"):
