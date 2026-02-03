@@ -1,11 +1,13 @@
 # 🧬 Preditor de Risco de Obesidade
 
 ## 📋 Sobre o Projeto
-Este projeto foi desenvolvido como parte do **Tech Challenge da Fase 4** (FIAP). O objetivo é auxiliar profissionais de saúde no diagnóstico preditivo de obesidade utilizando **Machine Learning** e visualização de dados interativa.
+Este projeto foi desenvolvido como parte do **Tech Challenge da Fase 4** (FIAP). Uma solução inteligente de suporte à decisão clínica, que integra análise exploratória de dados populacionais e modelos preditivos para identificação precoce de riscos metabólicos.
 
 A aplicação resolve o problema da triagem médica, oferecendo:
-1.  **Dashboard Analítico:** Visão populacional estratégica com insights científicos sobre fatores de risco, mobilidade e genética.
-2.  **Prontuário Digital (IA):** Um sistema especialista que prevê o grau de obesidade de um paciente específico com base em seus hábitos e biometria.
+1.  **Dashboard Analítico:** Visualização estratégica de tendências epidemiológicas, permitindo correlacionar hábitos de vida (como mobilidade e dieta) com o perfil antropométrico da base de dados.
+2.  **Prontuário Digital (IA):** Interface de predição individual baseada em algoritmos de classificação, fornecendo a probabilidade estatística do diagnóstico com alta precisão (98.01%).
+
+visualize a publicação no streamlit https://preditor-de-risco-de-obesidade-adb5lkuptneqh6hkq83d9f.streamlit.app/
 
 ---
 

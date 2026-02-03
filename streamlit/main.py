@@ -16,11 +16,18 @@ st.set_page_config(
 # --- (CSS) ---
 st.markdown("""
     <style>
-    /* Configurações Gerais */
+    /* Configurações Gerais e Remoção de Bordas Brancas (Padding) */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .main {background-color: #F8F9FA;}
     
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 1rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+
     /* --- MENU LATERAL --- */
     section[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
         display: none !important;
@@ -62,19 +69,16 @@ st.markdown("""
         border: 1px solid #BDC3C7;
         color: #2C3E50;
     }
-    li[aria-selected="true"] {
-        background-color: #1ABC9C !important;
-        color: white !important;
-    }
     
-    /* Cards Gráficos */
+    /* Cards Gráficos e Tabelas */
     div[data-testid="metric-container"], div.stPlotlyChart {
         background-color: #FFFFFF;
         padding: 15px;
         border-radius: 15px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        width: 100% !important;
     }
-    
+
     /* INSIGHT BOX (Estilo Nota Médica) */
     .insight-box {
         background-color: #E8F8F5;
@@ -99,17 +103,17 @@ st.markdown("""
         display: inline-block;
         margin-top: 8px;
         font-size: 0.85em;
-        color: #16A085;
+        color: #16A085 !important;
         text-decoration: none;
         font-weight: 600;
         border: 1px solid #16A085;
-        padding: 4px 10px;
+        padding: 4px 12px;
         border-radius: 20px;
         transition: all 0.2s;
     }
     .insight-link:hover {
         background-color: #16A085;
-        color: white;
+        color: white !important;
     }
     
     /* Botões */
@@ -123,11 +127,6 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 1px;
         width: 100%;
-        transition: all 0.3s;
-    }
-    div.stButton > button:hover {
-        background-color: #1ABC9C;
-        box-shadow: 0 5px 15px rgba(26, 188, 156, 0.4);
     }
     
     h1, h2, h3 { color: #2C3E50; font-family: 'Segoe UI', sans-serif; }
