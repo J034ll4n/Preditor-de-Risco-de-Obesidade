@@ -16,16 +16,25 @@ st.set_page_config(
 # --- (CSS) ---
 st.markdown("""
     <style>
-    /* Configurações Gerais e Remoção de Bordas Brancas (Padding) */
+    /* Configurações Gerais */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .main {background-color: #F8F9FA;}
     
+    /* Ajuste de Margens da Página */
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 1rem;
-        padding-left: 5rem;
-        padding-right: 5rem;
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
+
+    /* --- REMOÇÃO TOTAL DE BORDAS BRANCAS NOS GRÁFICOS --- */
+    div[data-testid="metric-container"], div.stPlotlyChart {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0px !important;
     }
 
     /* --- MENU LATERAL --- */
@@ -40,80 +49,27 @@ st.markdown("""
         border: 1px solid #E6E9EF;
         box-shadow: 0 2px 5px rgba(0,0,0,0.02);
         cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
         font-weight: 600;
         color: #2C3E50;
-    }
-    section[data-testid="stSidebar"] div[role="radiogroup"] label:hover {
-        background-color: #E8F8F5;
-        border-color: #1ABC9C;
-        color: #16A085;
-        transform: translateX(5px);
     }
     section[data-testid="stSidebar"] div[role="radiogroup"] label[data-checked="true"] {
         background-color: #1ABC9C !important;
         color: white !important;
-        border-color: #1ABC9C !important;
-        box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3);
     }
     
-    /* Formulários */
-    div[data-testid="stForm"] div[role="radiogroup"] label > div:first-child {
-        display: flex !important;
-    }
-    div[data-baseweb="select"] > div {
-        background-color: #FFFFFF;
-        border-radius: 8px;
-        border: 1px solid #BDC3C7;
-        color: #2C3E50;
-    }
-    
-    /* Cards Gráficos e Tabelas */
-    div[data-testid="metric-container"], div.stPlotlyChart {
-        background-color: #FFFFFF;
-        padding: 15px;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        width: 100% !important;
-    }
-
-    /* INSIGHT BOX (Estilo Nota Médica) */
+    /* INSIGHT BOX */
     .insight-box {
         background-color: #E8F8F5;
         border-left: 5px solid #1ABC9C;
         padding: 15px;
         border-radius: 5px;
         margin-top: 10px;
-        font-size: 0.95em;
         color: #2C3E50;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     .insight-title {
         font-weight: bold;
         color: #16A085;
         margin-bottom: 5px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 1.05em;
-    }
-    .insight-link {
-        display: inline-block;
-        margin-top: 8px;
-        font-size: 0.85em;
-        color: #16A085 !important;
-        text-decoration: none;
-        font-weight: 600;
-        border: 1px solid #16A085;
-        padding: 4px 12px;
-        border-radius: 20px;
-        transition: all 0.2s;
-    }
-    .insight-link:hover {
-        background-color: #16A085;
-        color: white !important;
     }
     
     /* Botões */
@@ -121,11 +77,7 @@ st.markdown("""
         background-color: #16A085;
         color: white;
         border-radius: 30px;
-        border: none;
-        padding: 15px 30px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        padding: 15px;
         width: 100%;
     }
     
