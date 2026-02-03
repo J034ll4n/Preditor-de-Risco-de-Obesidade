@@ -1,4 +1,4 @@
-# 🧬 Preditor de Risco de Obesidade - Tech Challenge Fase 4
+# 🧬 Preditor de Risco de Obesidade
 
 ## 📋 Sobre o Projeto
 Este projeto foi desenvolvido como parte do **Tech Challenge da Fase 4** (FIAP). O objetivo é auxiliar profissionais de saúde no diagnóstico preditivo de obesidade utilizando **Machine Learning** e visualização de dados interativa.
