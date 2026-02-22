@@ -434,5 +434,20 @@ elif pagina == "🩺 Diagnóstico Individual":
                 else:
                     st.error(f"Erro na API (Status {resp.status_code})")
                     st.code(resp.text)
+                    
+            # --- Tratamento elegante para a Nuvem ---
+            except requests.exceptions.ConnectionError:
+                st.warning("☁️ **Modo Nuvem (Apenas Interface Visual)**")
+                st.info("A API de Machine Learning (Backend em Flask) não está rodando neste servidor em nuvem. Para utilizar o motor preditivo completo com 98% de acurácia, execute a arquitetura de microserviços localmente via Docker, conforme documentado no GitHub.")
+                
+                # Exibe um laudo simulado para o site na nuvem não ficar com um erro vermelho
+                st.markdown(f"""
+                <div style="background-color: #E6E9EF; padding: 25px; border-radius: 15px; color: #2C3E50; margin-top: 15px;">
+                    <h3 style="margin-bottom: 0px;">Resultado Simulado (Nuvem)</h3>
+                    <h1 style="margin-top: 5px;">Aguardando API Local</h1>
+                    <p style="font-size: 1.2em;">IMC Calculado: {imc_calc:.2f}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
             except Exception as e:
-                st.error(f"Erro de Conexão: {e}")
+                st.error(f"Erro Inesperado: {e}")
