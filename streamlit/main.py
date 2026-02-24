@@ -14,11 +14,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 1. CARREGAMENTO DOS MODELOS DE IA (INTEGRADO) ---
+# --- 1. CARREGAMENTO DOS MODELOS DE IA ---
 @st.cache_resource
 def load_ml_models():
     model, scaler = None, None
-    # Procura na pasta api ou na raiz (Streamlit Cloud)
     paths_model = ['api/modelo.pkl', 'modelo.pkl']
     paths_scaler = ['api/scaler.pkl', 'scaler.pkl']
     
@@ -70,7 +69,7 @@ COLOR_MAP = {
     "Sim": "#C0392B", "Não": "#1ABC9C"
 }
 
-# --- 3. CARREGAMENTO DE DADOS (REFREÇADO) ---
+# --- 3. CARREGAMENTO DE DADOS (BLINDAGEM TOTAL) ---
 @st.cache_data
 def load_data():
     caminhos = ['Obesity.csv', 'data/Obesity.csv', 'streamlit/data/Obesity.csv', '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv']
@@ -81,16 +80,25 @@ def load_data():
             break
             
     if df is not None:
+        # Limpa espaços e normaliza colunas
         df.columns = [str(c).strip() for c in df.columns]
-        # Rename Map Robusto
-        m = {
-            'NObeyesdad': 'Diagnostico', 'family_history_with_overweight': 'Hist_Familiar',
-            'Age': 'Idade', 'Weight': 'Peso', 'Height': 'Altura', 'Gender': 'Genero',
-            'FCVC': 'Consumo_Vegetais', 'NCP': 'Refeicoes_Diarias', 'CH2O': 'Ingestao_Agua',
-            'FAF': 'Atividade_Fisica', 'TUE': 'Tempo_Telas', 'MTRANS': 'Transporte'
-        }
-        df.rename(columns=m, inplace=True)
         
+        # Mapeamento dinâmico por palavra-chave (resolve o KeyError)
+        for col in df.columns:
+            c = col.lower()
+            if any(x in c for x in ['nobey', 'diag', 'obesidade']): df.rename(columns={col: 'Diagnostico'}, inplace=True)
+            elif any(x in c for x in ['family', 'historico', 'hist_familiar']): df.rename(columns={col: 'Hist_Familiar'}, inplace=True)
+            elif 'age' in c or 'idade' in c: df.rename(columns={col: 'Idade'}, inplace=True)
+            elif 'weight' in c or 'peso' in c: df.rename(columns={col: 'Peso'}, inplace=True)
+            elif 'height' in c or 'altura' in c: df.rename(columns={col: 'Altura'}, inplace=True)
+            elif 'mtrans' in c or 'transporte' in c: df.rename(columns={col: 'Transporte'}, inplace=True)
+            elif 'fcvc' in c or 'vegetais' in c: df.rename(columns={col: 'Consumo_Vegetais'}, inplace=True)
+            elif 'ncp' in c or 'refeicoes' in c: df.rename(columns={col: 'Refeicoes_Diarias'}, inplace=True)
+            elif 'ch2o' in c or 'agua' in c: df.rename(columns={col: 'Ingestao_Agua'}, inplace=True)
+            elif 'faf' in c or 'atividade' in c: df.rename(columns={col: 'Atividade_Fisica'}, inplace=True)
+            elif 'tue' in c or 'telas' in c: df.rename(columns={col: 'Tempo_Telas'}, inplace=True)
+
+        # Tradução de valores internos
         val_map = {
             "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
             "Overweight_Level_I":"Sobrepeso G. I", "Overweight_Level_II":"Sobrepeso G. II",
@@ -103,16 +111,16 @@ def load_data():
         for col in df.select_dtypes(include=['object']).columns:
             df[col] = df[col].map(lambda x: val_map.get(x, x))
         
-        ordem = ["Abaixo do Peso", "Peso Normal", "Sobrepeso G. I", "Sobrepeso G. II", "Obesidade G. I", "Obesidade G. II", "Obesidade G. III"]
         if 'Diagnostico' in df.columns:
+            ordem = ["Abaixo do Peso", "Peso Normal", "Sobrepeso G. I", "Sobrepeso G. II", "Obesidade G. I", "Obesidade G. II", "Obesidade G. III"]
             df['Ordem'] = pd.Categorical(df['Diagnostico'], categories=ordem, ordered=True)
             return df.sort_values('Ordem')
     return df
 
 # --- SIDEBAR ---
 with st.sidebar:
-    c_l1, c_l2, c_l3 = st.columns([1, 2, 1])
-    with c_l2: st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=120)
+    l1, l2, l3 = st.columns([1, 2, 1])
+    with l2: st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=120)
     st.markdown("<h3 style='text-align: center;'>Gestão de Saúde IA</h3>", unsafe_allow_html=True)
     pagina = st.radio("Navegação", ["📈 Dashboard Analítico", "🩺 Diagnóstico Individual"], index=0)
     st.markdown("---")
@@ -125,7 +133,7 @@ if pagina == "📈 Dashboard Analítico":
     st.title("Visão Populacional")
     st.markdown("**Análise estratégica baseada em evidências científicas e cruzamento de dados biométricos.**")
     
-    if df is not None:
+    if df is not None and 'Diagnostico' in df.columns:
         k1, k2, k3, k4 = st.columns(4)
         k1.metric("Vidas Monitoradas", len(df))
         k2.metric("Idade Média", f"{df['Idade'].mean():.0f} anos")
@@ -159,7 +167,6 @@ if pagina == "📈 Dashboard Analítico":
                 fig = px.histogram(df, x='Diagnostico', color='Hist_Familiar', barmode='group', color_discrete_map=COLOR_MAP, labels={'Hist_Familiar': 'Histórico Familiar'})
                 fig.update_layout(yaxis_title="Pacientes", xaxis_title="Diagnóstico")
                 st.plotly_chart(fig, use_container_width=True)
-            else: st.warning("Coluna 'Hist_Familiar' não encontrada.")
         with c4:
             st.subheader("📅 Idade vs Diagnóstico")
             fig = px.box(df, x='Diagnostico', y='Idade', color='Diagnostico', color_discrete_map=COLOR_MAP)
@@ -199,6 +206,7 @@ if pagina == "📈 Dashboard Analítico":
                 <br><a href="https://www.bmj.com/content/349/bmj.g4887" target="_blank" class="insight-link">🔗 Referência BMJ Journal</a>
             </div>
         """, unsafe_allow_html=True)
+    else: st.error("Erro: Coluna 'Diagnostico' não identificada no arquivo CSV.")
 
 # --- PÁGINA 2: DIAGNÓSTICO ---
 elif pagina == "🩺 Diagnóstico Individual":
@@ -238,7 +246,6 @@ elif pagina == "🩺 Diagnóstico Individual":
             map_freq = {"Não":0, "Não bebo":0, "Às vezes":1, "Freq.":2, "Sempre":3}
             imc_calc = peso / (altura ** 2)
             
-            # Array de 19 variáveis
             arr = np.array([[
                 1 if genero == "Masculino" else 0, idade, 1 if historico == "Sim" else 0,
                 1 if favc == "Sim" else 0, fcvc, ncp, map_freq.get(caec, 1), 
@@ -259,7 +266,7 @@ elif pagina == "🩺 Diagnóstico Individual":
 
                 st.markdown("---")
                 t_card, c_card = "Diagnóstico IA", COLOR_MAP.get(diag, "#16A085")
-                sub = f"Seu IMC ({imc_calc:.1f}) é saudável, mas seus hábitos sinalizam tendência a ganho de peso." if (imc_calc < 25 and "Obesidade" in diag) else "Classificação baseada em comportamento e biometria."
+                sub = f"Seu IMC ({imc_calc:.1f}) é saudável, mas seus hábitos sinalizam tendência a <b>{diag}</b>." if (imc_calc < 25 and "Obesidade" in diag) else "Classificação baseada em comportamento e biometria."
 
                 st.markdown(f"""<div class="result-card" style="background-color: {c_card};"><h3>{t_card}</h3><h1 style="color:white; font-size: 3em; margin:0;">{diag}</h1><p>{sub}</p></div>""", unsafe_allow_html=True)
 
@@ -281,5 +288,6 @@ elif pagina == "🩺 Diagnóstico Individual":
                 if calc in ["Freq.", "Sempre"]: recs.append(["🍺 Consumo Alcoólico", "Elevado", "O álcool fornece calorias vazias e reduz a oxidação de gorduras pelo fígado."])
                 
                 if recs:
-                    st.dataframe(pd.DataFrame(recs, columns=["Fator", "Situação Atual", "Conduta Recomendada"]), hide_index=True, use_container_width=True)
+                    df_recs = pd.DataFrame(recs, columns=["Fator", "Situação Atual", "Conduta Recomendada"])
+                    st.dataframe(df_recs, hide_index=True, use_container_width=True)
         else: st.error("Arquivos de IA não encontrados.")
