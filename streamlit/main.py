@@ -290,7 +290,7 @@ elif pagina == "🩺 Diagnóstico Individual":
                     if ch2o < 2.0:
                         recs.append(["💧 Hidratação", f"{ch2o:.1f} L/dia", "Aumentar a ingestão para 35ml/kg. A água é essencial para otimizar o metabolismo basal."])
                     if faf < 2.0:
-                        recs.append(["🏃 Atividade Física", f"{int(faf)} dia(s)/sem", "Aumentar a frequência semanal. A meta mínima da OMS é de 150 min de atividade moderada."])
+                        recs.append(["🏃 Atividade Física", f"Insuficientemente Ativo", "Aumentar a frequência semanal. A meta mínima da OMS é de 150 min de atividade moderada."])
                     if tue > 4.0:
                         recs.append(["📱 Fadiga Digital", f"{int(tue)} h/dia", "Reduzir o tempo de tela contínuo para evitar comportamento sedentário e inflamação sistêmica."])
                     if favc == "Sim":
