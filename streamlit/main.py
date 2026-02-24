@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 
+# CONFIGURAÇÃO DA PÁGINA 
 st.set_page_config(
     page_title="Preditor de Risco de Obesidade",
     page_icon="🧬",
@@ -12,6 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+#  CSS PROFISSIONAL 
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -42,25 +44,17 @@ st.markdown("""
 API_URL = os.environ.get("API_URL", "http://api-service:5000")
 
 COLOR_MAP = {
-    "Abaixo do Peso": "#3498DB", 
-    "Peso Normal": "#1ABC9C",
-    "Sobrepeso G. I": "#F1C40F", 
-    "Sobrepeso G. II": "#F39C12",
-    "Obesidade G. I": "#E67E22", 
-    "Obesidade G. II": "#FF6B6B",
+    "Abaixo do Peso": "#3498DB", "Peso Normal": "#1ABC9C",
+    "Sobrepeso G. I": "#F1C40F", "Sobrepeso G. II": "#F39C12",
+    "Obesidade G. I": "#E67E22", "Obesidade G. II": "#FF6B6B",
     "Obesidade G. III": "#C0392B",
-    "Sim": "#C0392B", 
-    "Não": "#1ABC9C"
+    "Sim": "#C0392B", "Não": "#1ABC9C"
 }
 
+# --- 3. CARREGAMENTO DE DADOS ---
 @st.cache_data
 def load_data():
-    caminhos = [
-        'data/Obesity.csv', 
-        'Obesity.csv', 
-        'streamlit/data/Obesity.csv',
-        '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv'
-    ]
+    caminhos = ['data/Obesity.csv', 'Obesity.csv', 'streamlit/data/Obesity.csv', '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv']
     df = None
     for p in caminhos:
         if os.path.exists(p):
@@ -70,36 +64,29 @@ def load_data():
     if df is not None:
         df.columns = df.columns.str.strip()
         
+        # Mapeamento Completo para evitar ValueError no Plotly (Trata UCI English e PT-BR)
         rename_map = {
-            'Age': 'Idade',
-            'Gender': 'Genero',
-            'Height': 'Altura',
-            'Weight': 'Peso',
-            'family_history_with_overweight': 'Hist_Familiar',
-            'FAVC': 'Dieta_Hipercalorica',
-            'FCVC': 'Consumo_Vegetais',
-            'NCP': 'Refeicoes_Diarias',
-            'CAEC': 'Comer_Entre_Refeicoes',
-            'SMOKE': 'Fumante',
-            'CH2O': 'Ingestao_Agua',
-            'SCC': 'Monitoramento_Calorias',
-            'FAF': 'Atividade_Fisica',
-            'TUE': 'Tempo_Telas',
-            'CALC': 'Consumo_Alcool',
-            'MTRANS': 'Transporte',
-            'NObeyesdad': 'Diagnostico',
-            'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
-            'Num_refeicoes': 'Refeicoes_Diarias',
-            'Consumo_Agua': 'Ingestao_Agua',
-            'Freq_Atividade_Fisica': 'Atividade_Fisica',
-            'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
-            'Freq_Vegetais': 'Consumo_Vegetais',
-            'Obesidade': 'Diagnostico'
+            'NObeyesdad': 'Diagnostico', 'Obesidade': 'Diagnostico',
+            'Age': 'Idade', 'Weight': 'Peso', 'Height': 'Altura',
+            'family_history_with_overweight': 'Hist_Familiar', 'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
+            'Gender': 'Genero', 'FAVC': 'Dieta_Hipercalorica', 'FCVC': 'Consumo_Vegetais',
+            'NCP': 'Refeicoes_Diarias', 'Num_refeicoes': 'Refeicoes_Diarias',
+            'CH2O': 'Ingestao_Agua', 'Consumo_Agua': 'Ingestao_Agua',
+            'FAF': 'Atividade_Fisica', 'Freq_Atividade_Fisica': 'Atividade_Fisica',
+            'TUE': 'Tempo_Telas', 'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
+            'MTRANS': 'Transporte', 'CALC': 'Consumo_Alcool', 'SMOKE': 'Fumante'
         }
         df.rename(columns=rename_map, inplace=True)
         
+        # Busca inteligente de fallback para colunas críticas se o rename falhar
         if 'Diagnostico' not in df.columns:
-            df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
+            possivel_diag = [c for c in df.columns if 'obese' in c.lower() or 'obesidade' in c.lower() or 'target' in c.lower()]
+            if possivel_diag: df.rename(columns={possivel_diag[0]: 'Diagnostico'}, inplace=True)
+            else: df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
+
+        if 'Hist_Familiar' not in df.columns:
+            possivel_hist = [c for c in df.columns if 'family' in c.lower() or 'historico' in c.lower()]
+            if possivel_hist: df.rename(columns={possivel_hist[0]: 'Hist_Familiar'}, inplace=True)
 
         val_map = {
             "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
@@ -120,6 +107,7 @@ def load_data():
             
     return df
 
+#  SIDEBAR 
 with st.sidebar:
     col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
     with col_logo2: st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=120)
@@ -128,6 +116,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #95a5a6; font-size: 0.8em;'>Engenharia de Dados Joe</div>", unsafe_allow_html=True)
 
+# PÁGINA 1: DASHBOARD 
 if pagina == "📈 Dashboard Analítico":
     st.title("Visão Populacional")
     st.markdown("**Análise estratégica baseada em evidências científicas e cruzamento de dados biométricos.**")
@@ -206,6 +195,7 @@ if pagina == "📈 Dashboard Analítico":
             </div>
         """, unsafe_allow_html=True)
 
+# PÁGINA 2: DIAGNÓSTICO 
 elif pagina == "🩺 Diagnóstico Individual":
     st.title("Prontuário Digital Inteligente")
     st.markdown("**Análise preditiva baseada em comportamento metabólico.**")
@@ -295,9 +285,9 @@ elif pagina == "🩺 Diagnóstico Individual":
                     if ch2o < 2.0:
                         recs.append(["💧 Hidratação", f"{ch2o:.1f} L/dia", "Aumentar a ingestão para 35ml/kg. A água é essencial para otimizar o metabolismo basal."])
                     if faf < 2.0:
-                        recs.append(["🏃 Atividade Física", f"{faf:.1f} dia(s)/sem", "Aumentar a frequência semanal. A meta mínima da OMS é de 150 min de atividade moderada."])
+                        recs.append(["🏃 Atividade Física", f"{int(faf)} dia(s)/sem", "Aumentar a frequência semanal. A meta mínima da OMS é de 150 min de atividade moderada."])
                     if tue > 4.0:
-                        recs.append(["📱 Fadiga Digital", f"{tue:.1f} h/dia", "Reduzir o tempo de tela contínuo para evitar comportamento sedentário e inflamação sistêmica."])
+                        recs.append(["📱 Fadiga Digital", f"{int(tue)} h/dia", "Reduzir o tempo de tela contínuo para evitar comportamento sedentário e inflamação sistêmica."])
                     if favc == "Sim":
                         recs.append(["🍔 Padrão Dietético", "Alta caloria", "Priorizar alimentos in natura. O consumo frequente de alta caloria desregula a saciedade."])
                     if fcvc < 2.5:
