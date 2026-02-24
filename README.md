@@ -1,6 +1,6 @@
 # 🧬 Preditor de Risco de Obesidade
 
-Este projeto é a entrega oficial da **Fase 4 do Tech Challenge (FIAP)**. Desenvolvido por **Joe Marques**, a solução integra Engenharia de Dados e visão clínica para oferecer uma ferramenta robusta de suporte à decisão médica no monitoramento da obesidade.
+Este projeto é a entrega oficial da **Fase 4 do Tech Challenge (FIAP)**, a solução integra Engenharia de Dados e visão clínica para oferecer uma ferramenta robusta de suporte à decisão médica no monitoramento da obesidade.
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://preditor-de-risco-de-obesidade-adb5lkuptneqh6hkq83d9f.streamlit.app/)
 
@@ -12,7 +12,6 @@ Diferente de preditores comuns, esta aplicação foca na **Prevenção Ativa**:
 * **Risco Metabólico Acumulado:** O algoritmo calcula a probabilidade estatística de todas as faixas de risco, gerando alertas precoces mesmo para pacientes com IMC normal.
 * **Fundamentação Científica:** Dashboards integrados com correlações baseadas em evidências da *Nature Portfolio*, *CDC* e *BMJ*.
 * **Perfil Atlântico:** Lógica implementada para mitigar falsos positivos em indivíduos com alta massa muscular (atletas).
-
 ---
 
 ## 🤖 Desenvolvimento da Inteligência Artificial
