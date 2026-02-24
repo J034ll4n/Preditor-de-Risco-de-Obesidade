@@ -5,7 +5,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 
-# CONFIGURAÇÃO DA PÁGINA 
 st.set_page_config(
     page_title="Preditor de Risco de Obesidade",
     page_icon="🧬",
@@ -13,7 +12,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-#  CSS PROFISSIONAL 
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -51,7 +49,6 @@ COLOR_MAP = {
     "Sim": "#C0392B", "Não": "#1ABC9C"
 }
 
-# --- 3. CARREGAMENTO DE DADOS ---
 @st.cache_data
 def load_data():
     caminhos = ['data/Obesity.csv', 'Obesity.csv', 'streamlit/data/Obesity.csv', '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv']
@@ -64,12 +61,13 @@ def load_data():
     if df is not None:
         df.columns = df.columns.str.strip()
         
-        # Mapeamento Completo para evitar ValueError no Plotly (Trata UCI English e PT-BR)
+        # Mapeamento Completo para compatibilidade total
         rename_map = {
             'NObeyesdad': 'Diagnostico', 'Obesidade': 'Diagnostico',
-            'Age': 'Idade', 'Weight': 'Peso', 'Height': 'Altura',
             'family_history_with_overweight': 'Hist_Familiar', 'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
-            'Gender': 'Genero', 'FAVC': 'Dieta_Hipercalorica', 'FCVC': 'Consumo_Vegetais',
+            'Age': 'Idade', 'Weight': 'Peso', 'Height': 'Altura',
+            'Gender': 'Genero', 'FAVC': 'Dieta_Hipercalorica', 
+            'FCVC': 'Consumo_Vegetais', 'Freq_Vegetais': 'Consumo_Vegetais',
             'NCP': 'Refeicoes_Diarias', 'Num_refeicoes': 'Refeicoes_Diarias',
             'CH2O': 'Ingestao_Agua', 'Consumo_Agua': 'Ingestao_Agua',
             'FAF': 'Atividade_Fisica', 'Freq_Atividade_Fisica': 'Atividade_Fisica',
@@ -78,15 +76,9 @@ def load_data():
         }
         df.rename(columns=rename_map, inplace=True)
         
-        # Busca inteligente de fallback para colunas críticas se o rename falhar
+        # Garantia de colunas essenciais
         if 'Diagnostico' not in df.columns:
-            possivel_diag = [c for c in df.columns if 'obese' in c.lower() or 'obesidade' in c.lower() or 'target' in c.lower()]
-            if possivel_diag: df.rename(columns={possivel_diag[0]: 'Diagnostico'}, inplace=True)
-            else: df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
-
-        if 'Hist_Familiar' not in df.columns:
-            possivel_hist = [c for c in df.columns if 'family' in c.lower() or 'historico' in c.lower()]
-            if possivel_hist: df.rename(columns={possivel_hist[0]: 'Hist_Familiar'}, inplace=True)
+            df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
 
         val_map = {
             "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
@@ -107,7 +99,6 @@ def load_data():
             
     return df
 
-#  SIDEBAR 
 with st.sidebar:
     col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
     with col_logo2: st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=120)
@@ -116,7 +107,6 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #95a5a6; font-size: 0.8em;'>Engenharia de Dados Joe</div>", unsafe_allow_html=True)
 
-# PÁGINA 1: DASHBOARD 
 if pagina == "📈 Dashboard Analítico":
     st.title("Visão Populacional")
     st.markdown("**Análise estratégica baseada em evidências científicas e cruzamento de dados biométricos.**")
@@ -174,13 +164,18 @@ if pagina == "📈 Dashboard Analítico":
         with c5:
             st.subheader("🕸️ Radar de Hábitos Saudáveis")
             radar_map = {'Consumo_Vegetais': 'Vegetais', 'Refeicoes_Diarias': 'Refeições', 'Ingestao_Agua': 'Água', 'Atividade_Fisica': 'Exercício'}
-            df_radar = df.groupby('Diagnostico')[list(radar_map.keys())].mean().reset_index()
-            df_radar = df_radar[df_radar['Diagnostico'].isin(['Peso Normal', 'Obesidade G. III'])]
-            fig_radar = go.Figure()
-            for i, row in df_radar.iterrows():
-                fig_radar.add_trace(go.Scatterpolar(r=row[list(radar_map.keys())], theta=list(radar_map.values()), fill='toself', name=row['Diagnostico'], line_color=COLOR_MAP.get(row['Diagnostico'])))
-            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 4])), paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig_radar, width="stretch")
+            # Verificação de segurança para as colunas do radar
+            colunas_radar = [c for c in radar_map.keys() if c in df.columns]
+            if len(colunas_radar) > 0:
+                df_radar = df.groupby('Diagnostico')[colunas_radar].mean().reset_index()
+                df_radar = df_radar[df_radar['Diagnostico'].isin(['Peso Normal', 'Obesidade G. III'])]
+                fig_radar = go.Figure()
+                for i, row in df_radar.iterrows():
+                    fig_radar.add_trace(go.Scatterpolar(r=row[colunas_radar], theta=[radar_map[c] for c in colunas_radar], fill='toself', name=row['Diagnostico'], line_color=COLOR_MAP.get(row['Diagnostico'])))
+                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 4])), paper_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig_radar, width="stretch")
+            else:
+                st.warning("Dados de hábitos insuficientes para gerar o radar.")
         with c6:
             st.subheader("🚌 Impacto do Transporte no Risco")
             fig = px.histogram(df, y="Transporte", color="Diagnostico", orientation='h', barnorm='percent', color_discrete_map=COLOR_MAP)
@@ -195,7 +190,6 @@ if pagina == "📈 Dashboard Analítico":
             </div>
         """, unsafe_allow_html=True)
 
-# PÁGINA 2: DIAGNÓSTICO 
 elif pagina == "🩺 Diagnóstico Individual":
     st.title("Prontuário Digital Inteligente")
     st.markdown("**Análise preditiva baseada em comportamento metabólico.**")
