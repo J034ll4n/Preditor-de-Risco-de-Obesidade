@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 
+# CONFIGURAÇÃO DA PÁGINA 
 st.set_page_config(
     page_title="Preditor de Risco de Obesidade",
     page_icon="🧬",
@@ -12,6 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+#  CSS PROFISSIONAL 
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -41,6 +43,7 @@ st.markdown("""
 
 API_URL = os.environ.get("API_URL", "http://api-service:5000")
 
+# MAPA DE CORES GLOBAL
 COLOR_MAP = {
     "Abaixo do Peso": "#3498DB", 
     "Peso Normal": "#1ABC9C",
@@ -53,6 +56,7 @@ COLOR_MAP = {
     "Não": "#1ABC9C"
 }
 
+# --- 3. CARREGAMENTO DE DADOS ---
 @st.cache_data
 def load_data():
     caminhos = ['data/Obesity.csv', 'Obesity.csv', 'streamlit/data/Obesity.csv', '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv']
@@ -63,6 +67,7 @@ def load_data():
             break
             
     if df is not None:
+        # Limpeza e normalização das colunas
         df.columns = df.columns.str.strip()
         
         rename_map = {
@@ -75,13 +80,19 @@ def load_data():
             'Obesidade': 'Diagnostico', 'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
             'Num_refeicoes': 'Refeicoes_Diarias', 'Consumo_Agua': 'Ingestao_Agua',
             'Freq_Atividade_Fisica': 'Atividade_Fisica', 'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
-            'Freq_Vegetais': 'Consumo_Vegetais'
+            'Freq_Vegetais': 'Consumo_Vegetais', 'Consumo_Frequente_Alta_Caloria': 'Dieta_Hipercalorica'
         }
-        df.rename(columns=rename_map, inplace=True)
+        df = df.rename(columns=rename_map)
         
-        # Fallback para garantir a coluna Diagnostico caso o rename falhe
+        # Fallback crítico para garantir Diagnostico e Hist_Familiar
         if 'Diagnostico' not in df.columns:
-            df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
+            df = df.rename(columns={df.columns[-1]: 'Diagnostico'})
+        if 'Hist_Familiar' not in df.columns:
+            # Tenta achar por similaridade se falhou
+            for c in df.columns:
+                if 'historico' in c.lower() or 'family' in c.lower():
+                    df = df.rename(columns={c: 'Hist_Familiar'})
+                    break
 
         val_map = {
             "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
@@ -167,13 +178,15 @@ if pagina == "📈 Dashboard Analítico":
         with c5:
             st.subheader("🕸️ Radar de Hábitos Saudáveis")
             radar_map = {'Consumo_Vegetais': 'Vegetais', 'Refeicoes_Diarias': 'Refeições', 'Ingestao_Agua': 'Água', 'Atividade_Fisica': 'Exercício'}
-            df_radar = df.groupby('Diagnostico')[list(radar_map.keys())].mean().reset_index()
-            df_radar = df_radar[df_radar['Diagnostico'].isin(['Peso Normal', 'Obesidade G. III'])]
-            fig_radar = go.Figure()
-            for i, row in df_radar.iterrows():
-                fig_radar.add_trace(go.Scatterpolar(r=row[list(radar_map.keys())], theta=list(radar_map.values()), fill='toself', name=row['Diagnostico'], line_color=COLOR_MAP.get(row['Diagnostico'])))
-            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 4])), paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig_radar, width="stretch")
+            cols_radar = [c for c in radar_map.keys() if c in df.columns]
+            if cols_radar:
+                df_radar = df.groupby('Diagnostico')[cols_radar].mean().reset_index()
+                df_radar = df_radar[df_radar['Diagnostico'].isin(['Peso Normal', 'Obesidade G. III'])]
+                fig_radar = go.Figure()
+                for i, row in df_radar.iterrows():
+                    fig_radar.add_trace(go.Scatterpolar(r=row[cols_radar], theta=[radar_map[c] for c in cols_radar], fill='toself', name=row['Diagnostico'], line_color=COLOR_MAP.get(row['Diagnostico'])))
+                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 4])), paper_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig_radar, width="stretch")
         with c6:
             st.subheader("🚌 Impacto do Transporte no Risco")
             fig = px.histogram(df, y="Transporte", color="Diagnostico", orientation='h', barnorm='percent', color_discrete_map=COLOR_MAP)
@@ -277,9 +290,9 @@ elif pagina == "🩺 Diagnóstico Individual":
                     if ch2o < 2.0:
                         recs.append(["💧 Hidratação", f"{ch2o:.1f} L/dia", "Aumentar a ingestão para 35ml/kg. A água é essencial para otimizar o metabolismo basal."])
                     if faf < 2.0:
-                        recs.append(["🏃 Atividade Física", f"{faf:.1f} dia(s)/sem", "Aumentar a frequência semanal. A meta mínima da OMS é de 150 min de atividade moderada."])
+                        recs.append(["🏃 Atividade Física", f"{int(faf)} dia(s)/sem", "Aumentar a frequência semanal. A meta mínima da OMS é de 150 min de atividade moderada."])
                     if tue > 4.0:
-                        recs.append(["📱 Fadiga Digital", f"{tue:.1f} h/dia", "Reduzir o tempo de tela contínuo para evitar comportamento sedentário e inflamação sistêmica."])
+                        recs.append(["📱 Fadiga Digital", f"{int(tue)} h/dia", "Reduzir o tempo de tela contínuo para evitar comportamento sedentário e inflamação sistêmica."])
                     if favc == "Sim":
                         recs.append(["🍔 Padrão Dietético", "Alta caloria", "Priorizar alimentos in natura. O consumo frequente de alta caloria desregula a saciedade."])
                     if fcvc < 2.5:
