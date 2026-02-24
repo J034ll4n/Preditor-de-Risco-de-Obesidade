@@ -43,7 +43,6 @@ st.markdown("""
 
 API_URL = os.environ.get("API_URL", "http://api-service:5000")
 
-# MAPA DE CORES GLOBAL 
 COLOR_MAP = {
     "Abaixo do Peso": "#3498DB", "Peso Normal": "#1ABC9C",
     "Sobrepeso G. I": "#F1C40F", "Sobrepeso G. II": "#F39C12",
@@ -55,15 +54,8 @@ COLOR_MAP = {
 # --- 3. CARREGAMENTO DE DADOS ---
 @st.cache_data
 def load_data():
-    # Diversos caminhos para garantir que o Streamlit Cloud ache o arquivo
-    caminhos = [
-        'data/Obesity.csv', 
-        'Obesity.csv', 
-        'streamlit/data/Obesity.csv',
-        '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv'
-    ]
+    caminhos = ['data/Obesity.csv', 'Obesity.csv', 'streamlit/data/Obesity.csv', '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv']
     df = None
-    
     for p in caminhos:
         if os.path.exists(p):
             df = pd.read_csv(p)
@@ -72,42 +64,24 @@ def load_data():
     if df is not None:
         df.columns = df.columns.str.strip()
         
-        # Mapeamento Completo para evitar KeyErrors em qualquer versão do CSV
+        # Mapeamento Completo para evitar ValueError no Plotly (Trata UCI English e PT-BR)
         rename_map = {
-            'NObeyesdad': 'Diagnostico',
-            'Age': 'Idade',
-            'Gender': 'Genero',
-            'Height': 'Altura',
-            'Weight': 'Peso',
-            'family_history_with_overweight': 'Hist_Familiar',
-            'FAVC': 'Dieta_Hipercalorica',
-            'FCVC': 'Consumo_Vegetais',
-            'NCP': 'Refeicoes_Diarias',
-            'CAEC': 'Comer_Entre_Refeicoes',
-            'SMOKE': 'Fumante',
-            'CH2O': 'Ingestao_Agua',
-            'SCC': 'Monitoramento_Calorias',
-            'FAF': 'Atividade_Fisica',
-            'TUE': 'Tempo_Telas',
-            'CALC': 'Consumo_Alcool',
-            'MTRANS': 'Transporte',
-            # Variações em português
-            'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
-            'Num_refeicoes': 'Refeicoes_Diarias',
-            'Consumo_Agua': 'Ingestao_Agua',
-            'Freq_Atividade_Fisica': 'Atividade_Fisica',
-            'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
-            'Freq_Vegetais': 'Consumo_Vegetais',
-            'Obesidade': 'Diagnostico'
+            'NObeyesdad': 'Diagnostico', 'Obesidade': 'Diagnostico',
+            'Age': 'Idade', 'Weight': 'Peso', 'Height': 'Altura',
+            'family_history_with_overweight': 'Hist_Familiar', 'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
+            'Gender': 'Genero', 'FAVC': 'Dieta_Hipercalorica', 'FCVC': 'Consumo_Vegetais',
+            'NCP': 'Refeicoes_Diarias', 'Num_refeicoes': 'Refeicoes_Diarias',
+            'CH2O': 'Ingestao_Agua', 'Consumo_Agua': 'Ingestao_Agua',
+            'FAF': 'Atividade_Fisica', 'Freq_Atividade_Fisica': 'Atividade_Fisica',
+            'TUE': 'Tempo_Telas', 'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
+            'MTRANS': 'Transporte', 'CALC': 'Consumo_Alcool', 'SMOKE': 'Fumante'
         }
-        
         df.rename(columns=rename_map, inplace=True)
         
-        # Caso o Diagnóstico ainda não tenha sido renomeado, pegamos a última coluna por padrão
+        # Fallback para garantir Diagnostico
         if 'Diagnostico' not in df.columns:
-             df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
+            df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
 
-        # Dicionário de tradução dos valores internos
         val_map = {
             "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
             "Overweight_Level_I":"Sobrepeso G. I", "Overweight_Level_II":"Sobrepeso G. II",
@@ -117,7 +91,6 @@ def load_data():
             "Automobile": "Automóvel", "Motorbike": "Moto", "Bike": "Bicicleta",
             "Male": "Masculino", "Female": "Feminino"
         }
-        
         for col in df.select_dtypes(include=['object']).columns:
             df[col] = df[col].map(lambda x: val_map.get(x, x))
         
@@ -148,8 +121,6 @@ if pagina == "📈 Dashboard Analítico":
         k1.metric("Vidas Monitoradas", len(df))
         k2.metric("Idade Média", f"{df['Idade'].mean():.0f} anos")
         k3.metric("IMC Médio Global", f"{(df['Peso']/(df['Altura']**2)).mean():.1f}")
-        
-        # Correção Taxa de Obesidade para evitar erro se Diagnostico falhar
         taxa = (len(df[df['Diagnostico'].astype(str).str.contains('Obesidade')]) / len(df)) * 100
         k4.metric("Taxa de Obesidade", f"{taxa:.1f}%")
 
@@ -218,7 +189,7 @@ if pagina == "📈 Dashboard Analítico":
             </div>
         """, unsafe_allow_html=True)
 
-#  PÁGINA 2: DIAGNÓSTICO 
+# PÁGINA 2: DIAGNÓSTICO 
 elif pagina == "🩺 Diagnóstico Individual":
     st.title("Prontuário Digital Inteligente")
     st.markdown("**Análise preditiva baseada em comportamento metabólico.**")
@@ -254,8 +225,6 @@ elif pagina == "🩺 Diagnóstico Individual":
     if submit:
         map_freq = {"Não":0, "Não bebo":0, "Às vezes":1, "Freq.":2, "Sempre":3}
         imc_calc = peso / (altura ** 2)
-        score_atl = faf * 1.5 
-        poss_atl = 1 if (faf >= 2 and imc_calc >= 25) else 0
         
         payload = {
             "Genero": 1 if genero == "Masculino" else 0, "Idade": idade,
@@ -266,7 +235,7 @@ elif pagina == "🩺 Diagnóstico Individual":
             "Freq_Atividade_Fisica": faf, "Tempo_uso_dispositivos_eletronicos": tue, "Consumo_Alcool": map_freq.get(calc, 0),
             "Transporte_Bike": 1 if transporte=="Bicicleta" else 0, "Transporte_Motorbike": 1 if transporte=="Moto" else 0,
             "Transporte_Public_Transportation": 1 if transporte=="Transp. Público" else 0,
-            "Transporte_Walking": 1 if transporte=="Caminhada" else 0, "Score_Atletico": score_atl, "Possivel_Atleta": poss_atl
+            "Transporte_Walking": 1 if transporte=="Caminhada" else 0, "Score_Atletico": faf * 1.5, "Possivel_Atleta": 1 if (faf >= 2 and imc_calc >= 25) else 0
         }
 
         with st.spinner("IA Analisando..."):
@@ -299,10 +268,10 @@ elif pagina == "🩺 Diagnóstico Individual":
                         st.progress(risco_total)
                     
                     st.markdown(f"""
-                    <div style='font-size: 1.1em; margin: 15px 0;'>
+                    <p style='font-size: 1.1em;'>
                         <b>Resumo Clínico:</b><br>
                         O modelo detectou hábitos <b>{risco_total*100:.1f}%</b> compatíveis com quadros de ganho de peso severo.
-                    </div>
+                    </p>
                     """, unsafe_allow_html=True)
 
                     st.markdown("### 📋 Plano de Intervenção Sugerido")
