@@ -2,9 +2,7 @@ streamlit
 requests
 flask
 streamlit
-pandas
-scikit-learn
 joblib
 requests
 plotly
-pandas
+scikit-learn==1.8.0
