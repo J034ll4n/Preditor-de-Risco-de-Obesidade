@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 
+# CONFIGURAÇÃO DA PÁGINA 
 st.set_page_config(
     page_title="Preditor de Risco de Obesidade",
     page_icon="🧬",
@@ -12,6 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+#  CSS PROFISSIONAL 
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -49,6 +51,7 @@ COLOR_MAP = {
     "Sim": "#C0392B", "Não": "#1ABC9C"
 }
 
+# --- 3. CARREGAMENTO DE DADOS ---
 @st.cache_data
 def load_data():
     caminhos = ['data/Obesity.csv', 'Obesity.csv', 'streamlit/data/Obesity.csv', '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv']
@@ -61,25 +64,35 @@ def load_data():
     if df is not None:
         df.columns = df.columns.str.strip()
         
-        # Mapeamento Completo para compatibilidade total
-        rename_map = {
-            'NObeyesdad': 'Diagnostico', 'Obesidade': 'Diagnostico',
-            'family_history_with_overweight': 'Hist_Familiar', 'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
-            'Age': 'Idade', 'Weight': 'Peso', 'Height': 'Altura',
-            'Gender': 'Genero', 'FAVC': 'Dieta_Hipercalorica', 
-            'FCVC': 'Consumo_Vegetais', 'Freq_Vegetais': 'Consumo_Vegetais',
-            'NCP': 'Refeicoes_Diarias', 'Num_refeicoes': 'Refeicoes_Diarias',
-            'CH2O': 'Ingestao_Agua', 'Consumo_Agua': 'Ingestao_Agua',
-            'FAF': 'Atividade_Fisica', 'Freq_Atividade_Fisica': 'Atividade_Fisica',
-            'TUE': 'Tempo_Telas', 'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
-            'MTRANS': 'Transporte', 'CALC': 'Consumo_Alcool', 'SMOKE': 'Fumante'
-        }
-        df.rename(columns=rename_map, inplace=True)
-        
-        # Garantia de colunas essenciais
-        if 'Diagnostico' not in df.columns:
-            df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
+        # Mapeamento robusto e flexível para garantir que as colunas existam
+        for col in df.columns:
+            c_low = col.lower()
+            if c_low in ['nobeyesdad', 'obesidade', 'diagnostico']:
+                df.rename(columns={col: 'Diagnostico'}, inplace=True)
+            elif c_low in ['family_history_with_overweight', 'historico_familiar_excesso_de_peso', 'hist_familiar']:
+                df.rename(columns={col: 'Hist_Familiar'}, inplace=True)
+            elif c_low in ['age', 'idade']:
+                df.rename(columns={col: 'Idade'}, inplace=True)
+            elif c_low in ['weight', 'peso']:
+                df.rename(columns={col: 'Peso'}, inplace=True)
+            elif c_low in ['height', 'altura']:
+                df.rename(columns={col: 'Altura'}, inplace=True)
+            elif c_low in ['gender', 'genero']:
+                df.rename(columns={col: 'Genero'}, inplace=True)
+            elif c_low in ['fcvc', 'consumo_vegetais', 'freq_vegetais']:
+                df.rename(columns={col: 'Consumo_Vegetais'}, inplace=True)
+            elif c_low in ['ncp', 'num_refeicoes', 'refeicoes_diarias']:
+                df.rename(columns={col: 'Refeicoes_Diarias'}, inplace=True)
+            elif c_low in ['ch2o', 'consumo_agua', 'ingestao_agua']:
+                df.rename(columns={col: 'Ingestao_Agua'}, inplace=True)
+            elif c_low in ['faf', 'freq_atividade_fisica', 'atividade_fisica']:
+                df.rename(columns={col: 'Atividade_Fisica'}, inplace=True)
+            elif c_low in ['tue', 'tempo_uso_dispositivos_eletronicos', 'tempo_telas']:
+                df.rename(columns={col: 'Tempo_Telas'}, inplace=True)
+            elif c_low in ['mtrans', 'transporte']:
+                df.rename(columns={col: 'Transporte'}, inplace=True)
 
+        # Dicionário de tradução dos valores internos
         val_map = {
             "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
             "Overweight_Level_I":"Sobrepeso G. I", "Overweight_Level_II":"Sobrepeso G. II",
@@ -89,6 +102,7 @@ def load_data():
             "Automobile": "Automóvel", "Motorbike": "Moto", "Bike": "Bicicleta",
             "Male": "Masculino", "Female": "Feminino"
         }
+        
         for col in df.select_dtypes(include=['object']).columns:
             df[col] = df[col].map(lambda x: val_map.get(x, x))
         
@@ -99,6 +113,7 @@ def load_data():
             
     return df
 
+#  SIDEBAR 
 with st.sidebar:
     col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
     with col_logo2: st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=120)
@@ -107,6 +122,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #95a5a6; font-size: 0.8em;'>Engenharia de Dados Joe</div>", unsafe_allow_html=True)
 
+# PÁGINA 1: DASHBOARD 
 if pagina == "📈 Dashboard Analítico":
     st.title("Visão Populacional")
     st.markdown("**Análise estratégica baseada em evidências científicas e cruzamento de dados biométricos.**")
@@ -142,11 +158,14 @@ if pagina == "📈 Dashboard Analítico":
         c3, c4 = st.columns(2)
         with c3:
             st.subheader("🧬 Fator Hereditário")
-            fig = px.histogram(df, x='Diagnostico', color='Hist_Familiar', barmode='group', 
-                               color_discrete_map=COLOR_MAP,
-                               labels={'Hist_Familiar': 'Histórico Familiar'})
-            fig.update_layout(yaxis_title="Pacientes", xaxis_title="Diagnóstico")
-            st.plotly_chart(fig, width="stretch")
+            if 'Diagnostico' in df.columns and 'Hist_Familiar' in df.columns:
+                fig = px.histogram(df, x='Diagnostico', color='Hist_Familiar', barmode='group', 
+                                   color_discrete_map=COLOR_MAP,
+                                   labels={'Hist_Familiar': 'Histórico Familiar'})
+                fig.update_layout(yaxis_title="Pacientes", xaxis_title="Diagnóstico")
+                st.plotly_chart(fig, width="stretch")
+            else:
+                st.error("Colunas para o gráfico de Hereditariedade não encontradas.")
         with c4:
             st.subheader("📅 Idade vs Diagnóstico")
             fig = px.box(df, x='Diagnostico', y='Idade', color='Diagnostico', color_discrete_map=COLOR_MAP)
@@ -164,18 +183,15 @@ if pagina == "📈 Dashboard Analítico":
         with c5:
             st.subheader("🕸️ Radar de Hábitos Saudáveis")
             radar_map = {'Consumo_Vegetais': 'Vegetais', 'Refeicoes_Diarias': 'Refeições', 'Ingestao_Agua': 'Água', 'Atividade_Fisica': 'Exercício'}
-            # Verificação de segurança para as colunas do radar
-            colunas_radar = [c for c in radar_map.keys() if c in df.columns]
-            if len(colunas_radar) > 0:
-                df_radar = df.groupby('Diagnostico')[colunas_radar].mean().reset_index()
+            cols_r = [c for c in radar_map.keys() if c in df.columns]
+            if len(cols_r) > 0:
+                df_radar = df.groupby('Diagnostico')[cols_r].mean().reset_index()
                 df_radar = df_radar[df_radar['Diagnostico'].isin(['Peso Normal', 'Obesidade G. III'])]
                 fig_radar = go.Figure()
                 for i, row in df_radar.iterrows():
-                    fig_radar.add_trace(go.Scatterpolar(r=row[colunas_radar], theta=[radar_map[c] for c in colunas_radar], fill='toself', name=row['Diagnostico'], line_color=COLOR_MAP.get(row['Diagnostico'])))
+                    fig_radar.add_trace(go.Scatterpolar(r=row[cols_r], theta=[radar_map[c] for c in cols_r], fill='toself', name=row['Diagnostico'], line_color=COLOR_MAP.get(row['Diagnostico'])))
                 fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 4])), paper_bgcolor='rgba(0,0,0,0)')
                 st.plotly_chart(fig_radar, width="stretch")
-            else:
-                st.warning("Dados de hábitos insuficientes para gerar o radar.")
         with c6:
             st.subheader("🚌 Impacto do Transporte no Risco")
             fig = px.histogram(df, y="Transporte", color="Diagnostico", orientation='h', barnorm='percent', color_discrete_map=COLOR_MAP)
@@ -190,6 +206,7 @@ if pagina == "📈 Dashboard Analítico":
             </div>
         """, unsafe_allow_html=True)
 
+# PÁGINA 2: DIAGNÓSTICO 
 elif pagina == "🩺 Diagnóstico Individual":
     st.title("Prontuário Digital Inteligente")
     st.markdown("**Análise preditiva baseada em comportamento metabólico.**")
@@ -202,7 +219,7 @@ elif pagina == "🩺 Diagnóstico Individual":
         with cb3: historico = st.selectbox("Histórico Familiar de Obesidade?", ["Sim", "Não"])
         cb4, cb5 = st.columns(2)
         with cb4: altura = st.number_input("Altura (m)", 1.00, 2.50, 1.70, step=0.01)
-        with cb5: peso = st.number_input("Peso (kg)", 30.0, 250.0, 70.0, step=0.1)
+        with col_logo2: peso = st.number_input("Peso (kg)", 30.0, 250.0, 70.0, step=0.1)
         
         st.subheader("🍎 Hábitos de Consumo")
         f1, f2, f3 = st.columns(3)
@@ -268,10 +285,10 @@ elif pagina == "🩺 Diagnóstico Individual":
                         st.progress(risco_total)
                     
                     st.markdown(f"""
-                    <p style='font-size: 1.1em;'>
+                    <div style='font-size: 1.1em; margin: 15px 0;'>
                         <b>Resumo Clínico:</b><br>
                         O modelo detectou hábitos <b>{risco_total*100:.1f}%</b> compatíveis com quadros de ganho de peso severo.
-                    </p>
+                    </div>
                     """, unsafe_allow_html=True)
 
                     st.markdown("### 📋 Plano de Intervenção Sugerido")
@@ -284,12 +301,6 @@ elif pagina == "🩺 Diagnóstico Individual":
                         recs.append(["📱 Fadiga Digital", f"{int(tue)} h/dia", "Reduzir o tempo de tela contínuo para evitar comportamento sedentário e inflamação sistêmica."])
                     if favc == "Sim":
                         recs.append(["🍔 Padrão Dietético", "Alta caloria", "Priorizar alimentos in natura. O consumo frequente de alta caloria desregula a saciedade."])
-                    if fcvc < 2.5:
-                        recs.append(["🥗 Micronutrientes", "Baixo consumo", "Aumentar vegetais nas refeições principais para garantir o aporte necessário de fibras e vitaminas."])
-                    if smoke == "Sim":
-                        recs.append(["🚭 Tabagismo", "Fumante", "O hábito tabágico eleva o estresse oxidativo e prejudica a recuperação metabólica."])
-                    if calc in ["Freq.", "Sempre"]:
-                        recs.append(["🍺 Consumo Alcoólico", "Elevado", "O álcool fornece calorias vazias e reduz a oxidação de gorduras pelo fígado."])
                     
                     if recs:
                         df_recs = pd.DataFrame(recs, columns=["Fator", "Situação Atual", "Conduta Recomendada"])
