@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import os
-import joblib  # Importante para carregar o modelo direto
+import joblib
 import numpy as np
 
 # CONFIGURAÇÃO DA PÁGINA 
@@ -14,23 +14,23 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 1. CARREGAMENTO DOS MODELOS DE IA ---
+# --- 1. CARREGAMENTO DOS MODELOS DE IA (INTEGRADO) ---
 @st.cache_resource
 def load_ml_models():
-    # Tenta carregar os modelos da pasta 'api' (onde costumam estar no seu projeto)
-    try:
-        model = joblib.load('api/modelo.pkl')
-        scaler = joblib.load('api/scaler.pkl')
-        return model, scaler
-    except:
-        try:
-            # Fallback se os arquivos estiverem na raiz
-            model = joblib.load('modelo.pkl')
-            scaler = joblib.load('scaler.pkl')
-            return model, scaler
-        except Exception as e:
-            st.error(f"Erro ao carregar arquivos de IA: {e}")
-            return None, None
+    # Procura os modelos na pasta api ou na raiz do repositório
+    model, scaler = None, None
+    paths_model = ['api/modelo.pkl', 'modelo.pkl']
+    paths_scaler = ['api/scaler.pkl', 'scaler.pkl']
+    
+    for p in paths_model:
+        if os.path.exists(p):
+            model = joblib.load(p)
+            break
+    for p in paths_scaler:
+        if os.path.exists(p):
+            scaler = joblib.load(p)
+            break
+    return model, scaler
 
 model, scaler = load_ml_models()
 
@@ -70,10 +70,10 @@ COLOR_MAP = {
     "Sim": "#C0392B", "Não": "#1ABC9C"
 }
 
-# --- 3. CARREGAMENTO DE DADOS ---
+# --- 3. CARREGAMENTO DE DADOS (BLINDADO) ---
 @st.cache_data
 def load_data():
-    caminhos = ['data/Obesity.csv', 'Obesity.csv', 'streamlit/data/Obesity.csv', '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv']
+    caminhos = ['Obesity.csv', 'data/Obesity.csv', 'streamlit/data/Obesity.csv', '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv']
     df = None
     for p in caminhos:
         if os.path.exists(p):
@@ -82,23 +82,21 @@ def load_data():
             
     if df is not None:
         df.columns = df.columns.str.strip()
-        
-        rename_map = {
-            'Age': 'Idade', 'Gender': 'Genero', 'Height': 'Altura', 'Weight': 'Peso',
-            'family_history_with_overweight': 'Hist_Familiar', 'NObeyesdad': 'Diagnostico',
-            'FAVC': 'Dieta_Hipercalorica', 'FCVC': 'Consumo_Vegetais', 'NCP': 'Refeicoes_Diarias',
-            'CAEC': 'Comer_Entre_Refeicoes', 'SMOKE': 'Fumante', 'CH2O': 'Ingestao_Agua',
-            'SCC': 'Monitoramento_Calorias', 'FAF': 'Atividade_Fisica', 'TUE': 'Tempo_Telas',
-            'CALC': 'Consumo_Alcool', 'MTRANS': 'Transporte',
-            'Obesidade': 'Diagnostico', 'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
-            'Num_refeicoes': 'Refeicoes_Diarias', 'Consumo_Agua': 'Ingestao_Agua',
-            'Freq_Atividade_Fisica': 'Atividade_Fisica', 'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
-            'Freq_Vegetais': 'Consumo_Vegetais'
+        # Mapeamento robusto para garantir que as colunas existam
+        m = {
+            'NObeyesdad': 'Diagnostico', 'Obesidade': 'Diagnostico',
+            'family_history_with_overweight': 'Hist_Familiar', 'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
+            'Age': 'Idade', 'Weight': 'Peso', 'Height': 'Altura',
+            'Gender': 'Genero', 'FAVC': 'Dieta_Hipercalorica',
+            'FCVC': 'Consumo_Vegetais', 'Freq_Vegetais': 'Consumo_Vegetais',
+            'NCP': 'Refeicoes_Diarias', 'Num_refeicoes': 'Refeicoes_Diarias',
+            'CH2O': 'Ingestao_Agua', 'Consumo_Agua': 'Ingestao_Agua',
+            'FAF': 'Atividade_Fisica', 'Freq_Atividade_Fisica': 'Atividade_Fisica',
+            'TUE': 'Tempo_Telas', 'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
+            'MTRANS': 'Transporte', 'CALC': 'Consumo_Alcool', 'SMOKE': 'Fumante'
         }
-        df.rename(columns=rename_map, inplace=True)
-        
-        if 'Diagnostico' not in df.columns:
-            df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
+        df.rename(columns=m, inplace=True)
+        if 'Diagnostico' not in df.columns: df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
 
         val_map = {
             "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
@@ -116,41 +114,42 @@ def load_data():
         if 'Diagnostico' in df.columns:
             df['Ordem'] = pd.Categorical(df['Diagnostico'], categories=ordem, ordered=True)
             return df.sort_values('Ordem')
-            
     return df
 
-#  SIDEBAR 
+# --- SIDEBAR ---
 with st.sidebar:
-    col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
-    with col_logo2: st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=120)
+    c_l1, c_l2, c_l3 = st.columns([1, 2, 1])
+    with c_l2: st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=120)
     st.markdown("<h3 style='text-align: center;'>Gestão de Saúde IA</h3>", unsafe_allow_html=True)
     pagina = st.radio("Navegação", ["📈 Dashboard Analítico", "🩺 Diagnóstico Individual"], index=0)
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #95a5a6; font-size: 0.8em;'>Engenharia de Dados Joe</div>", unsafe_allow_html=True)
 
-# PÁGINA 1: DASHBOARD 
+df = load_data()
+
+# --- PÁGINA 1: DASHBOARD ---
 if pagina == "📈 Dashboard Analítico":
     st.title("Visão Populacional")
     st.markdown("**Análise estratégica baseada em evidências científicas e cruzamento de dados biométricos.**")
     
-    df = load_data()
     if df is not None:
         k1, k2, k3, k4 = st.columns(4)
         k1.metric("Vidas Monitoradas", len(df))
         k2.metric("Idade Média", f"{df['Idade'].mean():.0f} anos")
         k3.metric("IMC Médio Global", f"{(df['Peso']/(df['Altura']**2)).mean():.1f}")
-        k4.metric("Taxa de Obesidade", f"{(len(df[df['Diagnostico'].astype(str).str.contains('Obesidade')]) / len(df)) * 100:.1f}%")
+        taxa = (len(df[df['Diagnostico'].astype(str).str.contains('Obesidade')]) / len(df)) * 100
+        k4.metric("Taxa de Obesidade", f"{taxa:.1f}%")
 
         st.markdown("---")
         c1, c2 = st.columns(2)
         with c1:
             st.subheader("📊 Distribuição de Risco")
             fig = px.pie(df, names='Diagnostico', color='Diagnostico', hole=0.5, color_discrete_map=COLOR_MAP)
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
         with c2:
             st.subheader("🔍 Clusters: Peso x Altura")
             fig = px.scatter(df, x='Peso', y='Altura', color='Diagnostico', color_discrete_map=COLOR_MAP)
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
 
         st.markdown(f"""
             <div class="insight-box">
@@ -163,15 +162,13 @@ if pagina == "📈 Dashboard Analítico":
         c3, c4 = st.columns(2)
         with c3:
             st.subheader("🧬 Fator Hereditário")
-            fig = px.histogram(df, x='Diagnostico', color='Hist_Familiar', barmode='group', 
-                               color_discrete_map=COLOR_MAP,
-                               labels={'Hist_Familiar': 'Histórico Familiar'})
+            fig = px.histogram(df, x='Diagnostico', color='Hist_Familiar', barmode='group', color_discrete_map=COLOR_MAP, labels={'Hist_Familiar': 'Histórico Familiar'})
             fig.update_layout(yaxis_title="Pacientes", xaxis_title="Diagnóstico")
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
         with c4:
             st.subheader("📅 Idade vs Diagnóstico")
             fig = px.box(df, x='Diagnostico', y='Idade', color='Diagnostico', color_discrete_map=COLOR_MAP)
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
 
         st.markdown(f"""
             <div class="insight-box">
@@ -186,19 +183,18 @@ if pagina == "📈 Dashboard Analítico":
             st.subheader("🕸️ Radar de Hábitos Saudáveis")
             radar_map = {'Consumo_Vegetais': 'Vegetais', 'Refeicoes_Diarias': 'Refeições', 'Ingestao_Agua': 'Água', 'Atividade_Fisica': 'Exercício'}
             cols_r = [c for c in radar_map.keys() if c in df.columns]
-            if cols_r:
-                df_radar = df.groupby('Diagnostico')[cols_r].mean().reset_index()
-                df_radar = df_radar[df_radar['Diagnostico'].isin(['Peso Normal', 'Obesidade G. III'])]
-                fig_radar = go.Figure()
-                for i, row in df_radar.iterrows():
-                    fig_radar.add_trace(go.Scatterpolar(r=row[cols_r], theta=[radar_map[c] for c in cols_r], fill='toself', name=row['Diagnostico'], line_color=COLOR_MAP.get(row['Diagnostico'])))
-                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 4])), paper_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig_radar, width="stretch")
+            df_radar = df.groupby('Diagnostico')[cols_r].mean().reset_index()
+            df_radar = df_radar[df_radar['Diagnostico'].isin(['Peso Normal', 'Obesidade G. III'])]
+            fig_radar = go.Figure()
+            for i, row in df_radar.iterrows():
+                fig_radar.add_trace(go.Scatterpolar(r=row[cols_r], theta=[radar_map[c] for c in cols_r], fill='toself', name=row['Diagnostico'], line_color=COLOR_MAP.get(row['Diagnostico'])))
+            fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 4])), paper_bgcolor='rgba(0,0,0,0)')
+            st.plotly_chart(fig_radar, use_container_width=True)
         with c6:
             st.subheader("🚌 Impacto do Transporte no Risco")
             fig = px.histogram(df, y="Transporte", color="Diagnostico", orientation='h', barnorm='percent', color_discrete_map=COLOR_MAP)
             fig.update_layout(xaxis_title="Proporção Populacional (%)", yaxis_title="Tipo de Transporte")
-            st.plotly_chart(fig, width="stretch")
+            st.plotly_chart(fig, use_container_width=True)
 
         st.markdown(f"""
             <div class="insight-box">
@@ -208,13 +204,10 @@ if pagina == "📈 Dashboard Analítico":
             </div>
         """, unsafe_allow_html=True)
 
-#  PÁGINA 2: DIAGNÓSTICO INDIVIDUAL (LÓGICA IA INTEGRADA)
+# --- PÁGINA 2: DIAGNÓSTICO ---
 elif pagina == "🩺 Diagnóstico Individual":
     st.title("Prontuário Digital Inteligente")
     st.markdown("**Análise preditiva baseada em comportamento metabólico.**")
-    
-    if model is None:
-        st.warning("⚠️ Os arquivos de IA (modelo.pkl/scaler.pkl) não foram encontrados. O diagnóstico está desativado.")
     
     with st.form("main_form"):
         st.subheader("👤 Biometria")
@@ -244,77 +237,58 @@ elif pagina == "🩺 Diagnóstico Individual":
         with l5: tue = st.slider("Telas (h/dia)", 0.0, 24.0, 5.0)
         submit = st.form_submit_button("PROCESSAR ANÁLISE CLÍNICA")
 
-    if submit and model is not None:
-        map_freq = {"Não":0, "Não bebo":0, "Às vezes":1, "Freq.":2, "Sempre":3}
-        imc_calc = peso / (altura ** 2)
-        
-        # Preparação dos dados para o modelo
-        dados_input = np.array([[
-            1 if genero == "Masculino" else 0,
-            idade,
-            1 if historico == "Sim" else 0,
-            1 if favc == "Sim" else 0,
-            fcvc, ncp, map_freq.get(caec, 1),
-            1 if smoke == "Sim" else 0,
-            ch2o,
-            1 if scc == "Sim" else 0,
-            faf, tue, map_freq.get(calc, 0),
-            1 if transporte=="Bicicleta" else 0,
-            1 if transporte=="Moto" else 0,
-            1 if transporte=="Transp. Público" else 0,
-            1 if transporte=="Caminhada" else 0,
-            faf * 1.5, # Score Atlético
-            1 if (faf >= 2 and imc_calc >= 25) else 0 # Possível Atleta
-        ]])
-        
-        with st.spinner("IA Analisando..."):
-            try:
-                # Normalização e Predição
-                dados_scaled = scaler.transform(dados_input)
-                prediction = model.predict(dados_scaled)[0]
-                probs = model.predict_proba(dados_scaled)[0]
+    if submit:
+        if model and scaler:
+            map_freq = {"Não":0, "Não bebo":0, "Às vezes":1, "Freq.":2, "Sempre":3}
+            imc_calc = peso / (altura ** 2)
+            
+            # Preparação das 19 variáveis do modelo
+            arr = np.array([[
+                1 if genero == "Masculino" else 0, idade, 1 if historico == "Sim" else 0,
+                1 if favc == "Sim" else 0, fcvc, ncp, map_freq.get(caec, 1), 
+                1 if smoke == "Sim" else 0, ch2o, 1 if scc == "Sim" else 0,
+                faf, tue, map_freq.get(calc, 0),
+                1 if transporte=="Bicicleta" else 0, 1 if transporte=="Moto" else 0,
+                1 if transporte=="Transp. Público" else 0, 1 if transporte=="Caminhada" else 0,
+                faf * 1.5, 1 if (faf >= 2 and imc_calc >= 25) else 0
+            ]])
+            
+            with st.spinner("IA Analisando..."):
+                scaled = scaler.transform(arr)
+                pred = model.predict(scaled)[0]
+                probs = model.predict_proba(scaled)[0]
+                risco_total = np.sum(probs[2:])
                 
-                # Mapeamento reverso do alvo (conforme treinado)
-                # Ordem padrão: Insufficient, Normal, Overweight I, Overweight II, Obesidade I, II, III
-                target_names = ["Abaixo do Peso", "Peso Normal", "Sobrepeso G. I", "Sobrepeso G. II", "Obesidade G. I", "Obesidade G. II", "Obesidade G. III"]
-                
-                # Lógica de Risco Total (Soma das probabilidades de sobrepeso e obesidade)
-                risco_total = np.sum(probs[2:]) 
-                diag = target_names[prediction] if isinstance(prediction, (int, np.integer)) else prediction
+                names = ["Abaixo do Peso", "Peso Normal", "Sobrepeso G. I", "Sobrepeso G. II", "Obesidade G. I", "Obesidade G. II", "Obesidade G. III"]
+                diag = names[pred]
 
                 st.markdown("---")
-                if imc_calc < 25 and risco_total > 0.5:
-                    t_card, c_card, sub = "Alerta de Risco Futuro", "#E67E22", f"Seu IMC ({imc_calc:.1f}) é saudável, mas seus hábitos sinalizam tendência a ganho de peso."
+                if imc_calc < 25 and "Obesidade" in diag:
+                    t_card, c_card, sub = "Alerta de Risco Futuro", "#E67E22", f"Seu IMC ({imc_calc:.1f}) é saudável, mas seus hábitos sinalizam tendência a <b>{diag}</b>."
                 else:
                     t_card, c_card, sub = "Diagnóstico IA", COLOR_MAP.get(diag, "#16A085"), "Classificação baseada em comportamento e biometria."
 
-                st.markdown(f"""
-                    <div class="result-card" style="background-color: {c_card};">
-                        <h3 style="color:white; margin:0;">{t_card}</h3>
-                        <h1 style="color:white; font-size: 3em; margin:0;">{diag}</h1>
-                        <p style="color: rgba(255,255,255,0.9); font-size: 1.1em; margin-top:10px;">{sub}</p>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"""<div class="result-card" style="background-color: {c_card};"><h3>{t_card}</h3><h1 style="color:white; font-size: 3em; margin:0;">{diag}</h1><p>{sub}</p></div>""", unsafe_allow_html=True)
 
                 r1, r2, r3 = st.columns(3)
                 with r1: st.metric("IMC Atual", f"{imc_calc:.2f}"); st.caption("Referência ideal: 18.5 a 24.9")
                 with r2: st.metric("Tendência de Risco", f"{risco_total*100:.1f}%")
-                with r3: 
-                    st.write("**Nível de Risco Geral:**")
-                    st.progress(float(risco_total))
+                with r3: st.write("**Nível de Risco Geral:**"); st.progress(float(risco_total))
                 
-                st.markdown(f"**Resumo Clínico:** O modelo detectou hábitos **{risco_total*100:.1f}%** compatíveis com quadros de ganho de peso severo.")
+                st.markdown(f"""<div style='font-size: 1.1em; margin: 15px 0;'><b>Resumo Clínico:</b><br>O modelo detectou hábitos <b>{risco_total*100:.1f}%</b> compatíveis com quadros de ganho de peso severo.</div>""", unsafe_allow_html=True)
 
                 st.markdown("### 📋 Plano de Intervenção Sugerido")
                 recs = []
-                if ch2o < 2.0: recs.append(["💧 Hidratação", f"{ch2o:.1f} L/dia", "Aumentar a ingestão para 35ml/kg. A água otimiza o metabolismo basal."])
-                if faf < 2.0: recs.append(["🏃 Atividade Física", f"{int(faf)} dia(s)/sem", "Aumentar a frequência semanal. Meta mínima OMS: 150 min/semana."])
-                if tue > 4.0: recs.append(["📱 Fadiga Digital", f"{int(tue)} h/dia", "Reduzir tempo de tela para evitar comportamento sedentário."])
-                if favc == "Sim": recs.append(["🍔 Padrão Dietético", "Alta caloria", "Priorizar alimentos in natura. Calorias vazias desregulam a saciedade."])
-                if fcvc < 2.5: recs.append(["🥗 Micronutrientes", "Baixo consumo", "Aumentar vegetais para garantir aporte de fibras e vitaminas."])
-                if smoke == "Sim": recs.append(["🚭 Tabagismo", "Fumante", "O tabagismo eleva o estresse oxidativo e prejudica o metabolismo."])
-                if calc in ["Freq.", "Sempre"]: recs.append(["🍺 Consumo Alcoólico", "Elevado", "O álcool fornece calorias vazias e reduz a oxidação de gorduras."])
+                if ch2o < 2.0: recs.append(["💧 Hidratação", f"{ch2o:.1f} L/dia", "Aumentar a ingestão para 35ml/kg. A água é essencial para otimizar o metabolismo basal."])
+                if faf < 2.0: recs.append(["🏃 Atividade Física", f"{int(faf)} dia(s)/sem", "Aumentar a frequência semanal. A meta mínima da OMS é de 150 min de atividade moderada."])
+                if tue > 4.0: recs.append(["📱 Fadiga Digital", f"{int(tue)} h/dia", "Reduzir o tempo de tela contínuo para evitar comportamento sedentário e inflamação sistêmica."])
+                if favc == "Sim": recs.append(["🍔 Padrão Dietético", "Alta caloria", "Priorizar alimentos in natura. O consumo frequente de alta caloria desregula a saciedade."])
+                if fcvc < 2.5: recs.append(["🥗 Micronutrientes", "Baixo consumo", "Aumentar vegetais nas refeições principais para garantir o aporte necessário de fibras e vitaminas."])
+                if smoke == "Sim": recs.append(["🚭 Tabagismo", "Fumante", "O hábito tabágico eleva o estresse oxidativo e prejudica a recuperação metabólica."])
+                if calc in ["Freq.", "Sempre"]: recs.append(["🍺 Consumo Alcoólico", "Elevado", "O álcool fornece calorias vazias e reduz a oxidação de gorduras pelo fígado."])
                 
                 if recs:
-                    st.dataframe(pd.DataFrame(recs, columns=["Fator", "Situação Atual", "Conduta Recomendada"]), hide_index=True, width="stretch")
-            except Exception as e: st.error(f"Erro no processamento da IA: {e}")
+                    df_recs = pd.DataFrame(recs, columns=["Fator", "Situação Atual", "Conduta Recomendada"])
+                    st.dataframe(df_recs, hide_index=True, width="stretch")
+        else:
+            st.error("Erro: Arquivos de IA não encontrados (modelo.pkl / scaler.pkl).")
