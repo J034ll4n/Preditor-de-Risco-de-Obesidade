@@ -55,36 +55,52 @@ COLOR_MAP = {
 
 @st.cache_data
 def load_data():
-    caminho = 'data/Obesity.csv' 
-    if not os.path.exists(caminho): return None
-    df = pd.read_csv(caminho)
-    df.columns = df.columns.str.strip()
+    # Streamlit Cloud roda da raiz, então 'data/Obesity.csv' costuma funcionar
+    # Mas vamos garantir tentando dois caminhos
+    caminhos = ['data/Obesity.csv', 'Obesity.csv', 'streamlit/data/Obesity.csv']
+    df = None
     
-    rename_map = {
-        'Obesidade': 'Diagnostico',
-        'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
-        'Num_refeicoes': 'Refeicoes_Diarias',
-        'Consumo_Agua': 'Ingestao_Agua',
-        'Freq_Atividade_Fisica': 'Atividade_Fisica',
-        'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
-        'Freq_Vegetais': 'Consumo_Vegetais'
-    }
-    df.rename(columns=rename_map, inplace=True)
-    
-    val_map = {
-        "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
-        "Overweight_Level_I":"Sobrepeso G. I", "Overweight_Level_II":"Sobrepeso G. II",
-        "Obesity_Type_I":"Obesidade G. I", "Obesity_Type_II":"Obesidade G. II",
-        "Obesity_Type_III":"Obesidade G. III", "yes":"Sim", "no":"Não",
-        "Public_Transportation": "Transp. Público", "Walking": "Caminhada",
-        "Automobile": "Automóvel", "Motorbike": "Moto", "Bike": "Bicicleta"
-    }
-    for col in df.select_dtypes(include=['object']).columns:
-        df[col] = df[col].map(lambda x: val_map.get(x, x))
-    
-    ordem = ["Abaixo do Peso", "Peso Normal", "Sobrepeso G. I", "Sobrepeso G. II", "Obesidade G. I", "Obesidade G. II", "Obesidade G. III"]
-    df['Ordem'] = pd.Categorical(df['Diagnostico'], categories=ordem, ordered=True)
-    return df.sort_values('Ordem')
+    for p in caminhos:
+        if os.path.exists(p):
+            df = pd.read_csv(p)
+            break
+            
+    if df is not None:
+        df.columns = df.columns.str.strip()
+        
+        # O PULO DO GATO: Verifica se a coluna alvo é 'NObeyesdad' ou 'Obesidade'
+        # Isso evita o KeyError se o CSV mudar de nome de coluna
+        target_col = 'NObeyesdad' if 'NObeyesdad' in df.columns else 'Obesidade'
+        
+        rename_map = {
+            target_col: 'Diagnostico',
+            'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
+            'Num_refeicoes': 'Refeicoes_Diarias',
+            'Consumo_Agua': 'Ingestao_Agua',
+            'Freq_Atividade_Fisica': 'Atividade_Fisica',
+            'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
+            'Freq_Vegetais': 'Consumo_Vegetais'
+        }
+        df.rename(columns=rename_map, inplace=True)
+        
+        val_map = {
+            "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
+            "Overweight_Level_I":"Sobrepeso G. I", "Overweight_Level_II":"Sobrepeso G. II",
+            "Obesity_Type_I":"Obesidade G. I", "Obesity_Type_II":"Obesidade G. II",
+            "Obesity_Type_III":"Obesidade G. III", "yes":"Sim", "no":"Não",
+            "Public_Transportation": "Transp. Público", "Walking": "Caminhada",
+            "Automobile": "Automóvel", "Motorbike": "Moto", "Bike": "Bicicleta"
+        }
+        for col in df.select_dtypes(include=['object']).columns:
+            df[col] = df[col].map(lambda x: val_map.get(x, x))
+        
+        ordem = ["Abaixo do Peso", "Peso Normal", "Sobrepeso G. I", "Sobrepeso G. II", "Obesidade G. I", "Obesidade G. II", "Obesidade G. III"]
+        # Só cria a categoria se a coluna existir de fato
+        if 'Diagnostico' in df.columns:
+            df['Ordem'] = pd.Categorical(df['Diagnostico'], categories=ordem, ordered=True)
+            return df.sort_values('Ordem')
+            
+    return df
 
 with st.sidebar:
     col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
