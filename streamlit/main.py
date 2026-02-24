@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 
+# CONFIGURAÇÃO DA PÁGINA 
 st.set_page_config(
     page_title="Preditor de Risco de Obesidade",
     page_icon="🧬",
@@ -12,6 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+#  CSS PROFISSIONAL 
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -41,21 +43,25 @@ st.markdown("""
 
 API_URL = os.environ.get("API_URL", "http://api-service:5000")
 
+# MAPA DE CORES GLOBAL 
 COLOR_MAP = {
-    "Abaixo do Peso": "#3498DB", 
-    "Peso Normal": "#1ABC9C",
-    "Sobrepeso G. I": "#F1C40F", 
-    "Sobrepeso G. II": "#F39C12",
-    "Obesidade G. I": "#E67E22", 
-    "Obesidade G. II": "#FF6B6B",
+    "Abaixo do Peso": "#3498DB", "Peso Normal": "#1ABC9C",
+    "Sobrepeso G. I": "#F1C40F", "Sobrepeso G. II": "#F39C12",
+    "Obesidade G. I": "#E67E22", "Obesidade G. II": "#FF6B6B",
     "Obesidade G. III": "#C0392B",
-    "Sim": "#C0392B", 
-    "Não": "#1ABC9C"
+    "Sim": "#C0392B", "Não": "#1ABC9C"
 }
 
+# --- 3. CARREGAMENTO DE DADOS ---
 @st.cache_data
 def load_data():
-    caminhos = ['data/Obesity.csv', 'Obesity.csv', 'streamlit/data/Obesity.csv']
+    # Diversos caminhos para garantir que o Streamlit Cloud ache o arquivo
+    caminhos = [
+        'data/Obesity.csv', 
+        'Obesity.csv', 
+        'streamlit/data/Obesity.csv',
+        '/mount/src/preditor-de-risco-de-obesidade/data/Obesity.csv'
+    ]
     df = None
     
     for p in caminhos:
@@ -64,17 +70,16 @@ def load_data():
             break
             
     if df is not None:
-        # Limpa espaços em branco nos nomes das colunas
         df.columns = df.columns.str.strip()
         
-        # Mapeamento Completo: Traduz do Inglês (UCI Dataset) para o seu código
+        # Mapeamento Completo para evitar KeyErrors em qualquer versão do CSV
         rename_map = {
+            'NObeyesdad': 'Diagnostico',
             'Age': 'Idade',
             'Gender': 'Genero',
             'Height': 'Altura',
             'Weight': 'Peso',
             'family_history_with_overweight': 'Hist_Familiar',
-            'NObeyesdad': 'Diagnostico',
             'FAVC': 'Dieta_Hipercalorica',
             'FCVC': 'Consumo_Vegetais',
             'NCP': 'Refeicoes_Diarias',
@@ -85,11 +90,8 @@ def load_data():
             'FAF': 'Atividade_Fisica',
             'TUE': 'Tempo_Telas',
             'CALC': 'Consumo_Alcool',
-            'MTRANS': 'Transporte'
-        }
-        
-        # Também adicionamos as variações que você já tinha no código
-        rename_map.update({
+            'MTRANS': 'Transporte',
+            # Variações em português
             'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
             'Num_refeicoes': 'Refeicoes_Diarias',
             'Consumo_Agua': 'Ingestao_Agua',
@@ -97,11 +99,14 @@ def load_data():
             'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
             'Freq_Vegetais': 'Consumo_Vegetais',
             'Obesidade': 'Diagnostico'
-        })
+        }
         
-        # Renomeia apenas as colunas que existirem no CSV
         df.rename(columns=rename_map, inplace=True)
         
+        # Caso o Diagnóstico ainda não tenha sido renomeado, pegamos a última coluna por padrão
+        if 'Diagnostico' not in df.columns:
+             df.rename(columns={df.columns[-1]: 'Diagnostico'}, inplace=True)
+
         # Dicionário de tradução dos valores internos
         val_map = {
             "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
@@ -123,6 +128,7 @@ def load_data():
             
     return df
 
+#  SIDEBAR 
 with st.sidebar:
     col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
     with col_logo2: st.image("https://cdn-icons-png.flaticon.com/512/3063/3063176.png", width=120)
@@ -131,6 +137,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<div style='text-align: center; color: #95a5a6; font-size: 0.8em;'>Engenharia de Dados Joe</div>", unsafe_allow_html=True)
 
+# PÁGINA 1: DASHBOARD 
 if pagina == "📈 Dashboard Analítico":
     st.title("Visão Populacional")
     st.markdown("**Análise estratégica baseada em evidências científicas e cruzamento de dados biométricos.**")
@@ -141,7 +148,10 @@ if pagina == "📈 Dashboard Analítico":
         k1.metric("Vidas Monitoradas", len(df))
         k2.metric("Idade Média", f"{df['Idade'].mean():.0f} anos")
         k3.metric("IMC Médio Global", f"{(df['Peso']/(df['Altura']**2)).mean():.1f}")
-        k4.metric("Taxa de Obesidade", f"{(len(df[df['Diagnostico'].str.contains('Obesidade')]) / len(df)) * 100:.1f}%")
+        
+        # Correção Taxa de Obesidade para evitar erro se Diagnostico falhar
+        taxa = (len(df[df['Diagnostico'].astype(str).str.contains('Obesidade')]) / len(df)) * 100
+        k4.metric("Taxa de Obesidade", f"{taxa:.1f}%")
 
         st.markdown("---")
         c1, c2 = st.columns(2)
@@ -208,6 +218,7 @@ if pagina == "📈 Dashboard Analítico":
             </div>
         """, unsafe_allow_html=True)
 
+#  PÁGINA 2: DIAGNÓSTICO 
 elif pagina == "🩺 Diagnóstico Individual":
     st.title("Prontuário Digital Inteligente")
     st.markdown("**Análise preditiva baseada em comportamento metabólico.**")
