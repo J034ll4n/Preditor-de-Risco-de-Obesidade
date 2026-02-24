@@ -1,6 +1,6 @@
 # 🧬 Preditor de Risco de Obesidade
 
-Este projeto é a entrega da **Fase 4 do Tech Challenge (FIAP)**. visão clínica para oferecer uma ferramenta robusta de suporte à decisão médica no monitoramento da obesidade.
+Este projeto é a entrega oficial da **Fase 4 do Tech Challenge (FIAP)**. Desenvolvido por **Joe Marques**, a solução integra Engenharia de Dados e visão clínica para oferecer uma ferramenta robusta de suporte à decisão médica no monitoramento da obesidade.
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://preditor-de-risco-de-obesidade-adb5lkuptneqh6hkq83d9f.streamlit.app/)
 
@@ -9,85 +9,70 @@ Este projeto é a entrega da **Fase 4 do Tech Challenge (FIAP)**. visão clínic
 ## 🔬 Diferenciais da Solução
 
 Diferente de preditores comuns, esta aplicação foca na **Prevenção Ativa**:
-* **Risco Metabólico Acumulado:** O algoritmo calcula a soma das probabilidades de todas as faixas de sobrepeso e obesidade, gerando um alerta precoce mesmo para pacientes que ainda apresentam IMC dentro da normalidade.
-* **Fundamentação Científica:** Dashboards integrados com correlações baseadas em evidências de estudos da *Nature Portfolio*, *CDC* e *British Medical Journal (BMJ)*.
-* **Detecção de Perfil Atlético:** Lógica implementada para mitigar falsos positivos em indivíduos com alta massa muscular, onde o IMC isolado não reflete o real risco metabólico.
+* **Risco Metabólico Acumulado:** O algoritmo calcula a probabilidade estatística de todas as faixas de risco, gerando alertas precoces mesmo para pacientes com IMC normal.
+* **Fundamentação Científica:** Dashboards integrados com correlações baseadas em evidências da *Nature Portfolio*, *CDC* e *BMJ*.
+* **Perfil Atlântico:** Lógica implementada para mitigar falsos positivos em indivíduos com alta massa muscular (atletas).
 
 ---
 
-## 🏗️ Arquitetura e Fluxo de Dados
+## 🤖 Desenvolvimento da Inteligência Artificial
 
-A aplicação opera em uma arquitetura de microsserviços containerizada para garantir escalabilidade e separação de responsabilidades:
+Para garantir a **viabilidade clínica** em ambientes hospitalares, o modelo passou por um rigoroso processo de refinamento técnico:
 
-1.  **Frontend (Streamlit):** Interface interativa para visualização de tendências populacionais e entrada de dados individuais.
-2.  **API de Predição (Flask):** Engine de Machine Learning que processa o modelo `Random Forest` e retorna a análise de risco e predição.
-3.  **Processamento:** Normalização de dados via `StandardScaler` aplicada em tempo real sobre os inputs do usuário.
+### ⚙️ Treinamento e Otimização
+* **Dataset:** 1.688 registros com 19 variáveis comportamentais e genéticas.
+* **Algoritmo:** Random Forest Classifier.
+* **Tuning:** Implementação de `GridSearchCV` com 5-fold cross-validation (40 combinações testadas).
+* **Estratégia Anti-Overfitting:** Aplicamos **Regularização Agressiva (Pruning)**, limitando a profundidade das árvores e estabelecendo um mínimo de amostras por folha para garantir que o modelo identifique padrões reais e não apenas "decore" a base de dados.
+
+### 📊 Performance Final
+| Métrica | Resultado |
+| :--- | :--- |
+| **Acurácia (CV)** | 81.10% (+/- 4.39%) |
+| **Precisão Média** | 85.43% |
+| **AUC Score Global** | 0.9824 |
+| **Acurácia de Treino** | 90.54% |
+
+> **Conclusão Técnica:** Reduzimos o aprendizado viciado de 100% para 85% no conjunto de treino, equilibrando a balança para um modelo generalista e confiável para novos pacientes.
 
 ---
 
-## 📊 Módulos do Sistema
+## 🏗️ Arquitetura da Solução
+A solução utiliza uma arquitetura containerizada, separando o Frontend (Streamlit) da lógica de Machine Learning (API Flask).
 
-### 📈 Dashboard Analítico
-Visão estratégica da base de dados monitorada:
-* **Distribuição de Risco:** Visão macro das categorias de peso na população.
-* **Análise de Clusters:** Correlação visual entre Peso x Altura para identificação de padrões.
-* **Fatores Determinantes:** Impacto do histórico familiar e da idade no agravamento do quadro clínico.
-* **Radar de Hábitos:** Comparativo direto entre perfis saudáveis e de alto risco.
+![Arquitetura do Projeto](img/arquitetura.jpg)
 
-### 🩺 Prontuário Digital Inteligente
-Interface para diagnóstico individualizado:
-* **Classificação Clínica:** Resultado em tempo real baseado em 17 biomarcadores comportamentais.
-* **Tendência de Risco:** Métrica de compatibilidade com quadros de ganho de peso severo.
-* **Plano de Intervenção:** Recomendações personalizadas e automáticas para correção de hábitos.
+---
+
+## 🖼️ Interface e Funcionalidades
+
+### 1. Dashboard Executivo e Clusters
+Visão macro da população monitorada com KPIs de saúde e análise de correlação Peso x Altura.
+![Visão Geral](img/1.png) ![Clusters](img/2.png)
+
+### 2. Fatores Clínicos e Estilo de Vida
+Análise do impacto da genética e radar de hábitos comparativo (Saudável vs Obesidade).
+![Fatores](img/3.png) ![Lifestyle](img/4.png)
+
+### 3. Prontuário Digital e Diagnóstico IA
+Formulário intuitivo para inserção de dados e resultado em tempo real com cálculo de risco acumulado.
+![Formulário](img/5.png) ![Resultado](img/6.png)
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-* **Linguagem:** Python 3.9
-* **Data Science:** Pandas, Numpy, Scikit-learn, Joblib
+* **Linguagem:** Python 3.9+
+* **Data Science:** Scikit-learn, Pandas, Numpy
 * **Visualização:** Plotly Express & Graph Objects
-* **Backend:** Flask (REST API)
-* **Frontend:** Streamlit
+* **Web/API:** Streamlit & Flask
 * **DevOps:** Docker & Docker Compose
 
 ---
 
-## 🚀 Como Executar o Projeto
+## 🚀 Como Executar
 
-### Pré-requisitos
-* [Docker](https://www.docker.com/) e Docker Compose instalados.
-
-### Passo a Passo
-
-1.  **Clone o repositório:**
-    ```bash
-    git clone [https://github.com/J034ll4n/Preditor-de-Risco-de-Obesidade.git](https://github.com/J034ll4n/Preditor-de-Risco-de-Obesidade.git)
-    cd Preditor-de-Risco-de-Obesidade
-    ```
-
-2.  **Suba a aplicação:**
-    Este comando irá construir as imagens e iniciar os serviços da API e do Frontend.
-    ```bash
-    docker-compose up --build
-    ```
-
-3.  **Acesse no seu navegador:**
-    * **App Streamlit:** [http://localhost:8501](http://localhost:8501)
-    * **API Flask:** [http://localhost:5000](http://localhost:5000)
-
----
-
-## 📂 Estrutura de Pastas
-
-```text
-├── api/                # Backend Flask e Motor de IA
-│   ├── app.py          # Lógica da API e cálculo de Risco Acumulado
-│   ├── modelo.pkl      # Modelo Random Forest treinado (98% acurácia)
-│   └── scaler.pkl      # Normalizador de dados (StandardScaler)
-├── data/               # Base de dados (Obesity.csv)
-├── img/                # Assets para documentação
-├── main.py             # Interface Frontend Streamlit
-├── docker-compose.yml  # Orquestração dos containers
-├── Dockerfile          # Definição das imagens Docker
-└── requirements.txt    # Dependências do ecossistema Python
+1. **Clone o repositório:**
+   ```bash
+   git clone [https://github.com/J034ll4n/Preditor-de-Risco-de-Obesidade.git](https://github.com/J034ll4n/Preditor-de-Risco-de-Obesidade.git)
+   cd Preditor-de-Risco-de-Obesidade
