@@ -55,8 +55,6 @@ COLOR_MAP = {
 
 @st.cache_data
 def load_data():
-    # Streamlit Cloud roda da raiz, então 'data/Obesity.csv' costuma funcionar
-    # Mas vamos garantir tentando dois caminhos
     caminhos = ['data/Obesity.csv', 'Obesity.csv', 'streamlit/data/Obesity.csv']
     df = None
     
@@ -66,36 +64,59 @@ def load_data():
             break
             
     if df is not None:
+        # Limpa espaços em branco nos nomes das colunas
         df.columns = df.columns.str.strip()
         
-        # O PULO DO GATO: Verifica se a coluna alvo é 'NObeyesdad' ou 'Obesidade'
-        # Isso evita o KeyError se o CSV mudar de nome de coluna
-        target_col = 'NObeyesdad' if 'NObeyesdad' in df.columns else 'Obesidade'
-        
+        # Mapeamento Completo: Traduz do Inglês (UCI Dataset) para o seu código
         rename_map = {
-            target_col: 'Diagnostico',
+            'Age': 'Idade',
+            'Gender': 'Genero',
+            'Height': 'Altura',
+            'Weight': 'Peso',
+            'family_history_with_overweight': 'Hist_Familiar',
+            'NObeyesdad': 'Diagnostico',
+            'FAVC': 'Dieta_Hipercalorica',
+            'FCVC': 'Consumo_Vegetais',
+            'NCP': 'Refeicoes_Diarias',
+            'CAEC': 'Comer_Entre_Refeicoes',
+            'SMOKE': 'Fumante',
+            'CH2O': 'Ingestao_Agua',
+            'SCC': 'Monitoramento_Calorias',
+            'FAF': 'Atividade_Fisica',
+            'TUE': 'Tempo_Telas',
+            'CALC': 'Consumo_Alcool',
+            'MTRANS': 'Transporte'
+        }
+        
+        # Também adicionamos as variações que você já tinha no código
+        rename_map.update({
             'Historico_Familiar_Excesso_De_Peso': 'Hist_Familiar',
             'Num_refeicoes': 'Refeicoes_Diarias',
             'Consumo_Agua': 'Ingestao_Agua',
             'Freq_Atividade_Fisica': 'Atividade_Fisica',
             'Tempo_uso_dispositivos_eletronicos': 'Tempo_Telas',
-            'Freq_Vegetais': 'Consumo_Vegetais'
-        }
+            'Freq_Vegetais': 'Consumo_Vegetais',
+            'Obesidade': 'Diagnostico'
+        })
+        
+        # Renomeia apenas as colunas que existirem no CSV
         df.rename(columns=rename_map, inplace=True)
         
+        # Dicionário de tradução dos valores internos
         val_map = {
             "Insufficient_Weight":"Abaixo do Peso", "Normal_Weight":"Peso Normal",
             "Overweight_Level_I":"Sobrepeso G. I", "Overweight_Level_II":"Sobrepeso G. II",
             "Obesity_Type_I":"Obesidade G. I", "Obesity_Type_II":"Obesidade G. II",
             "Obesity_Type_III":"Obesidade G. III", "yes":"Sim", "no":"Não",
             "Public_Transportation": "Transp. Público", "Walking": "Caminhada",
-            "Automobile": "Automóvel", "Motorbike": "Moto", "Bike": "Bicicleta"
+            "Automobile": "Automóvel", "Motorbike": "Moto", "Bike": "Bicicleta",
+            "Male": "Masculino", "Female": "Feminino"
         }
+        
         for col in df.select_dtypes(include=['object']).columns:
             df[col] = df[col].map(lambda x: val_map.get(x, x))
         
         ordem = ["Abaixo do Peso", "Peso Normal", "Sobrepeso G. I", "Sobrepeso G. II", "Obesidade G. I", "Obesidade G. II", "Obesidade G. III"]
-        # Só cria a categoria se a coluna existir de fato
         if 'Diagnostico' in df.columns:
             df['Ordem'] = pd.Categorical(df['Diagnostico'], categories=ordem, ordered=True)
             return df.sort_values('Ordem')
